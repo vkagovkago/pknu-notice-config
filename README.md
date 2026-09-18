@@ -1,0 +1,1 @@
+# pknu-notice-config
