@@ -1,0 +1,654 @@
+{
+ "version": 1,
+ "boards": [
+  {
+   "id": "도서관",
+   "college": "도서관",
+   "name": "도서관 공지사항",
+   "url": "https://libweb.pknu.ac.kr/board/notice/"
+  },
+  {
+   "id": "국어국문학과",
+   "college": "인문사회과학대학",
+   "name": "국어국문학과",
+   "url": "https://kukmun.pknu.ac.kr/korean/5186"
+  },
+  {
+   "id": "영어영문학부",
+   "college": "인문사회과학대학",
+   "name": "영어영문학부",
+   "url": "https://english.pknu.ac.kr/english/3936"
+  },
+  {
+   "id": "일어일문학부",
+   "college": "인문사회과학대학",
+   "name": "일어일문학부",
+   "url": "https://japanese.pknu.ac.kr/japanese/4347"
+  },
+  {
+   "id": "사학과",
+   "college": "인문사회과학대학",
+   "name": "사학과",
+   "url": "https://history.pknu.ac.kr/history/3913"
+  },
+  {
+   "id": "경제학과",
+   "college": "인문사회과학대학",
+   "name": "경제학과",
+   "url": "https://econ.pknu.ac.kr/econ/2836"
+  },
+  {
+   "id": "법학과",
+   "college": "인문사회과학대학",
+   "name": "법학과",
+   "url": "https://pknulaw.pknu.ac.kr/pknulaw/3917"
+  },
+  {
+   "id": "행정복지학부",
+   "college": "인문사회과학대학",
+   "name": "행정복지학부",
+   "url": "https://pknupa.pknu.ac.kr/pknupasw/5571"
+  },
+  {
+   "id": "행정복지학부2",
+   "college": "인문사회과학대학",
+   "name": "행정복지학부(사회복지학전공)",
+   "url": "https://icms.pknu.ac.kr/ps1/6330"
+  },
+  {
+   "id": "국제지역학부",
+   "college": "인문사회과학대학",
+   "name": "국제지역학부",
+   "url": "https://dias.pknu.ac.kr/dias/3996"
+  },
+  {
+   "id": "중국학과",
+   "college": "인문사회과학대학",
+   "name": "중국학과",
+   "url": "https://chinese.pknu.ac.kr/chinese/4288"
+  },
+  {
+   "id": "정치외교학과",
+   "college": "인문사회과학대학",
+   "name": "정치외교학과",
+   "url": "https://politics.pknu.ac.kr/politics/3781"
+  },
+  {
+   "id": "유아교육과",
+   "college": "인문사회과학대학",
+   "name": "유아교육과",
+   "url": "https://education.pknu.ac.kr/education/1545"
+  },
+  {
+   "id": "패션디자인학과",
+   "college": "인문사회과학대학",
+   "name": "패션디자인학과",
+   "url": "https://fashion.pknu.ac.kr/fashion/2128"
+  },
+  {
+   "id": "인문사회과학대학자유전공학부",
+   "college": "인문사회과학대학",
+   "name": "인문사회과학대학 자유전공학부",
+   "url": "https://hssliberal.pknu.ac.kr/hssliberal/7136"
+  },
+  {
+   "id": "인문사회과학대학",
+   "college": "인문사회과학대학",
+   "name": "인문사회과학대학 (단과대)",
+   "url": "https://chss.pknu.ac.kr/hss/2438"
+  },
+  {
+   "id": "응용수학과",
+   "college": "자연과학대학",
+   "name": "응용수학과",
+   "url": "https://math.pknu.ac.kr/math/339"
+  },
+  {
+   "id": "물리학과",
+   "college": "자연과학대학",
+   "name": "물리학과",
+   "url": "https://physics.pknu.ac.kr/physics/373"
+  },
+  {
+   "id": "화학과",
+   "college": "자연과학대학",
+   "name": "화학과",
+   "url": "https://chem.pknu.ac.kr/chem/2180"
+  },
+  {
+   "id": "미생물학과",
+   "college": "자연과학대학",
+   "name": "미생물학과",
+   "url": "https://microbiology.pknu.ac.kr/microbiology/390"
+  },
+  {
+   "id": "간호학과",
+   "college": "자연과학대학",
+   "name": "간호학과",
+   "url": "https://nursing.pknu.ac.kr/nursing/432"
+  },
+  {
+   "id": "과학컴퓨팅학과",
+   "college": "자연과학대학",
+   "name": "과학컴퓨팅학과",
+   "url": "https://scicomp.pknu.ac.kr/scicomp/575"
+  },
+  {
+   "id": "자연과학대학자유전공학부",
+   "college": "자연과학대학",
+   "name": "자연과학대학 자유전공학부",
+   "url": "https://nsum.pknu.ac.kr/nsum/7173"
+  },
+  {
+   "id": "자연과학대학",
+   "college": "자연과학대학",
+   "name": "자연과학대학 (단과대)",
+   "url": "https://cns.pknu.ac.kr/cns/242"
+  },
+  {
+   "id": "경영학부",
+   "college": "경영대학",
+   "name": "경영학부",
+   "url": "https://dba.pknu.ac.kr/dba/1235"
+  },
+  {
+   "id": "국제통상학부",
+   "college": "경영대학",
+   "name": "국제통상학부",
+   "url": "https://pknudic.pknu.ac.kr/pknudic/1193"
+  },
+  {
+   "id": "경영대학자유전공학부",
+   "college": "경영대학",
+   "name": "경영대학 자유전공학부",
+   "url": "https://cbaliberal.pknu.ac.kr/cbaliberal/7104"
+  },
+  {
+   "id": "경영대학",
+   "college": "경영대학",
+   "name": "경영대학 (단과대)",
+   "url": "https://cba.pknu.ac.kr/cba/6509"
+  },
+  {
+   "id": "전기공학부",
+   "college": "공과대학",
+   "name": "전기공학부(전기공학전공)",
+   "url": "https://electric-eng.pknu.ac.kr/electric-eng/8037"
+  },
+  {
+   "id": "전기공학부2",
+   "college": "공과대학",
+   "name": "전기공학부(제어계측공학전공)",
+   "url": "https://control.pknu.ac.kr/control/3883"
+  },
+  {
+   "id": "전기공학부3",
+   "college": "공과대학",
+   "name": "전기공학부(디스플레이반도체공학전공)",
+   "url": "https://semicon.pknu.ac.kr/semicon/3684"
+  },
+  {
+   "id": "기계공학부",
+   "college": "공과대학",
+   "name": "기계공학부(기계학전공)",
+   "url": "https://me.pknu.ac.kr/me/1277"
+  },
+  {
+   "id": "기계공학부2",
+   "college": "공과대학",
+   "name": "기계공학부(기계설계공학전공)",
+   "url": "https://mae.pknu.ac.kr/mae/2217"
+  },
+  {
+   "id": "에너지수송시스템공학부",
+   "college": "공과대학",
+   "name": "에너지수송시스템공학부(냉동공조공학전공)",
+   "url": "https://ref.pknu.ac.kr/ref/1783"
+  },
+  {
+   "id": "에너지수송시스템공학부2",
+   "college": "공과대학",
+   "name": "에너지수송시스템공학부(기계시스템공학전공)",
+   "url": "https://mse.pknu.ac.kr/mse/5618"
+  },
+  {
+   "id": "에너지수송시스템공학부3",
+   "college": "공과대학",
+   "name": "에너지수송시스템공학부(조선해양시스템공학전공)",
+   "url": "https://name.pknu.ac.kr/name/2486"
+  },
+  {
+   "id": "화학공학과",
+   "college": "공과대학",
+   "name": "화학공학과",
+   "url": "https://chemeng.pknu.ac.kr/chemeng/2463"
+  },
+  {
+   "id": "공업화학고분자공학부",
+   "college": "공과대학",
+   "name": "고분자화학소재공학부(에너지화학소재공학전공)",
+   "url": "https://induseng.pknu.ac.kr/induseng/7734"
+  },
+  {
+   "id": "공업화학고분자공학부2",
+   "college": "공과대학",
+   "name": "고분자화학소재공학부(고분자공학전공)",
+   "url": "https://polymer.pknu.ac.kr/polymer/1315"
+  },
+  {
+   "id": "나노융합반도체공학부",
+   "college": "공과대학",
+   "name": "나노융합반도체공학부(나노융합공학전공)",
+   "url": "https://nano.pknu.ac.kr/nano/1884"
+  },
+  {
+   "id": "나노융합반도체공학부2",
+   "college": "공과대학",
+   "name": "나노융합반도체공학부(차세대반도체공학전공)",
+   "url": "https://semiconductor.pknu.ac.kr/semiconductor/5517"
+  },
+  {
+   "id": "시스템경영안전공학부",
+   "college": "공과대학",
+   "name": "시스템경영안전공학부(산업경영공학전공·기술·데이터공학전공)",
+   "url": "https://sme.pknu.ac.kr/sme/721"
+  },
+  {
+   "id": "시스템경영안전공학부2",
+   "college": "공과대학",
+   "name": "시스템경영안전공학부(안전공학전공)",
+   "url": "https://safety.pknu.ac.kr/safety/2078"
+  },
+  {
+   "id": "소방공학과",
+   "college": "공과대학",
+   "name": "소방공학과",
+   "url": "https://fire.pknu.ac.kr/fire/867"
+  },
+  {
+   "id": "융합소재공학부",
+   "college": "공과대학",
+   "name": "융합소재공학부(금속공학전공)",
+   "url": "https://metal.pknu.ac.kr/metal/2250"
+  },
+  {
+   "id": "융합소재공학부2",
+   "college": "공과대학",
+   "name": "융합소재공학부(재료공학전공)",
+   "url": "https://materials-engineering.pknu.ac.kr/materials-eng/5775"
+  },
+  {
+   "id": "융합소재공학부3",
+   "college": "공과대학",
+   "name": "융합소재공학부(신소재시스템공학전공)",
+   "url": "https://materials.pknu.ac.kr/materials/1059"
+  },
+  {
+   "id": "건축공학과",
+   "college": "공과대학",
+   "name": "건축공학과",
+   "url": "https://archieng.pknu.ac.kr/archieng/1426"
+  },
+  {
+   "id": "지속가능공학부",
+   "college": "공과대학",
+   "name": "지속가능공학부(토목공학전공)",
+   "url": "https://civil.pknu.ac.kr/civil/5345"
+  },
+  {
+   "id": "지속가능공학부2",
+   "college": "공과대학",
+   "name": "지속가능공학부(생태공학전공)",
+   "url": "https://ecoeng.pknu.ac.kr/ecoeng/5664"
+  },
+  {
+   "id": "공과대학자유전공학부",
+   "college": "공과대학",
+   "name": "공과대학 자유전공학부",
+   "url": "https://engopen.pknu.ac.kr/engopen/7117"
+  },
+  {
+   "id": "공과대학",
+   "college": "공과대학",
+   "name": "공과대학 (단과대)",
+   "url": "https://coe.pknu.ac.kr/?mcode=0406010000"
+  },
+  {
+   "id": "식품과학부",
+   "college": "수산과학대학",
+   "name": "식품과학부(식품공학전공)",
+   "url": "https://food.pknu.ac.kr/food/7400"
+  },
+  {
+   "id": "식품과학부2",
+   "college": "수산과학대학",
+   "name": "식품과학부(식품영양학전공)",
+   "url": "https://nulife.pknu.ac.kr/nulife/4379"
+  },
+  {
+   "id": "생물공학과",
+   "college": "수산과학대학",
+   "name": "생물공학과",
+   "url": "https://biotech.pknu.ac.kr/biotech/4159"
+  },
+  {
+   "id": "해양생산시스템관리학부",
+   "college": "수산과학대학",
+   "name": "해양생산시스템관리학부",
+   "url": "https://mpsm.pknu.ac.kr/view.do?no=303"
+  },
+  {
+   "id": "수산생명과학부",
+   "college": "수산과학대학",
+   "name": "수산생명과학부(양식응용생명과학전공)",
+   "url": "https://aqua-culture.pknu.ac.kr/aqua-culture/4174"
+  },
+  {
+   "id": "수산생명과학부2",
+   "college": "수산과학대학",
+   "name": "수산생명과학부(자원생물학전공)",
+   "url": "https://marinebio.pknu.ac.kr/marinebio/4100"
+  },
+  {
+   "id": "수산생명의학과",
+   "college": "수산과학대학",
+   "name": "수산생명의학과",
+   "url": "https://aquamed.pknu.ac.kr/aquamed/4208"
+  },
+  {
+   "id": "수해양산업교육과",
+   "college": "수산과학대학",
+   "name": "수해양산업교육과",
+   "url": "https://fedu.pknu.ac.kr/fedu/4456"
+  },
+  {
+   "id": "해양수산경영경제학부",
+   "college": "수산과학대학",
+   "name": "해양수산경영경제학부(해양수산경영학전공)",
+   "url": "https://mbe.pknu.ac.kr/mbe/5478"
+  },
+  {
+   "id": "해양수산경영경제학부2",
+   "college": "수산과학대학",
+   "name": "해양수산경영경제학부(자원환경경제학전공)",
+   "url": "https://ree.pknu.ac.kr/ree/2824"
+  },
+  {
+   "id": "수산과학대학자유전공학부",
+   "college": "수산과학대학",
+   "name": "수산과학대학 자유전공학부",
+   "url": "https://fisheries.pknu.ac.kr/fisheries/7204"
+  },
+  {
+   "id": "수산과학대학",
+   "college": "수산과학대학",
+   "name": "수산과학대학 (단과대)",
+   "url": "https://fishsci.pknu.ac.kr/kor/view.do?no=44"
+  },
+  {
+   "id": "지구환경시스템과학부",
+   "college": "환경·해양대학",
+   "name": "지구환경시스템과학부(환경공학전공)",
+   "url": "https://env-eng.pknu.ac.kr/env-eng/1996"
+  },
+  {
+   "id": "지구환경시스템과학부2",
+   "college": "환경·해양대학",
+   "name": "지구환경시스템과학부(해양학전공)",
+   "url": "https://pkuocean.pknu.ac.kr/pkuocean/1485"
+  },
+  {
+   "id": "지구환경시스템과학부3",
+   "college": "환경·해양대학",
+   "name": "지구환경시스템과학부(환경지질과학전공)",
+   "url": "https://earth.pknu.ac.kr/earth/1646"
+  },
+  {
+   "id": "지구환경시스템과학부4",
+   "college": "환경·해양대학",
+   "name": "지구환경시스템과학부(환경대기과학전공)",
+   "url": "https://envatm.pknu.ac.kr/envatm/2268"
+  },
+  {
+   "id": "위성정보융합공학전공",
+   "college": "환경·해양대학",
+   "name": "지구환경시스템과학부(공간정보시스템공학전공)",
+   "url": "http://geoinfo.pknu.ac.kr//05piazza/08.php"
+  },
+  {
+   "id": "해양공학과",
+   "college": "환경·해양대학",
+   "name": "해양공학과",
+   "url": "https://oceaneng.pknu.ac.kr/oceaneng/942"
+  },
+  {
+   "id": "에너지자원공학과",
+   "college": "환경·해양대학",
+   "name": "에너지자원공학과",
+   "url": "https://ere.pknu.ac.kr/ere/1455"
+  },
+  {
+   "id": "환경해양대학자유전공학부",
+   "college": "환경·해양대학",
+   "name": "환경·해양대학 자유전공학부",
+   "url": "https://lem.pknu.ac.kr/lem/7188"
+  },
+  {
+   "id": "환경해양대학",
+   "college": "환경·해양대학",
+   "name": "환경·해양대학 (단과대)",
+   "url": "https://enma.pknu.ac.kr/enma/1745"
+  },
+  {
+   "id": "데이터정보과학부",
+   "college": "정보융합대학",
+   "name": "데이터정보과학부(빅데이터융합전공)",
+   "url": "https://icms.pknu.ac.kr/bigdata/599"
+  },
+  {
+   "id": "데이터정보과학부2",
+   "college": "정보융합대학",
+   "name": "데이터정보과학부(통계·데이터사이언스전공)",
+   "url": "https://stat.pknu.ac.kr/stat/6482"
+  },
+  {
+   "id": "미디어커뮤니케이션학부",
+   "college": "정보융합대학",
+   "name": "미디어커뮤니케이션학부(언론정보전공)",
+   "url": "https://masscom.pknu.ac.kr/comm/4926"
+  },
+  {
+   "id": "미디어커뮤니케이션학부2",
+   "college": "정보융합대학",
+   "name": "미디어커뮤니케이션학부(미디어ICT공학전공)",
+   "url": "https://humanict.pknu.ac.kr/humanict/652"
+  },
+  {
+   "id": "스마트헬스케어학부",
+   "college": "정보융합대학",
+   "name": "스마트헬스케어학부(의공학전공)",
+   "url": "https://bme.pknu.ac.kr/bme/7237"
+  },
+  {
+   "id": "해양스포츠전공",
+   "college": "정보융합대학",
+   "name": "스마트헬스케어학부(해양스포츠전공)",
+   "url": "https://marinesports.pknu.ac.kr/marinesports/8004"
+  },
+  {
+   "id": "스마트헬스케어학부2",
+   "college": "정보융합대학",
+   "name": "스마트헬스케어학부(휴먼바이오융합전공)",
+   "url": "https://humanbio.pknu.ac.kr/humanbio/2886"
+  },
+  {
+   "id": "전자정보통신공학부",
+   "college": "정보융합대학",
+   "name": "전자정보통신공학부(전자공학전공)",
+   "url": "https://ee.pknu.ac.kr/ee/1669"
+  },
+  {
+   "id": "전자정보통신공학부2",
+   "college": "정보융합대학",
+   "name": "전자정보통신공학부(정보통신공학전공)",
+   "url": "https://ice.pknu.ac.kr/pknuice/3291"
+  },
+  {
+   "id": "조형학부",
+   "college": "정보융합대학",
+   "name": "조형학부(건축학전공)",
+   "url": "https://pknuarchi.pknu.ac.kr/pknuarchi/969"
+  },
+  {
+   "id": "조형학부3",
+   "college": "정보융합대학",
+   "name": "조형학부(공업디자인전공)",
+   "url": "https://industrial.pknu.ac.kr/industrial/3715"
+  },
+  {
+   "id": "조형학부2",
+   "college": "정보융합대학",
+   "name": "조형학부(시각디자인전공)",
+   "url": "https://visual.pknu.ac.kr/visual/3674"
+  },
+  {
+   "id": "컴퓨터인공지능공학부",
+   "college": "정보융합대학",
+   "name": "컴퓨터·인공지능공학부(컴퓨터공학전공·인공지능전공)",
+   "url": "https://ce.pknu.ac.kr/ce/1814"
+  },
+  {
+   "id": "디지털금융학과",
+   "college": "정보융합대학",
+   "name": "디지털금융학과",
+   "url": "https://digitalfinance.pknu.ac.kr/digitalfinance/5498"
+  },
+  {
+   "id": "스마트모빌리티공학과",
+   "college": "정보융합대학",
+   "name": "스마트모빌리티공학과",
+   "url": "https://smartmobility.pknu.ac.kr/smartmobility/5454"
+  },
+  {
+   "id": "정보융합대학자유전공학부",
+   "college": "정보융합대학",
+   "name": "정보융합대학 자유전공학부",
+   "url": "https://liberalitc.pknu.ac.kr/liberalitc/7160"
+  },
+  {
+   "id": "정보융합대학",
+   "college": "정보융합대학",
+   "name": "정보융합대학 (단과대)",
+   "url": "https://itc.pknu.ac.kr/html/06/01.php"
+  },
+  {
+   "id": "미래융합학부",
+   "college": "미래융합학부",
+   "name": "미래융합학부(단과대)",
+   "url": "https://future.pknu.ac.kr/future/5285"
+  },
+  {
+   "id": "미래융합학부평생교육상담학전공",
+   "college": "미래융합학부",
+   "name": "미래융합학부(평생교육·상담학전공)",
+   "url": "https://lifelong.pknu.ac.kr/lifelong/4038"
+  },
+  {
+   "id": "미래융합학부경찰범죄심리학전공",
+   "college": "미래융합학부",
+   "name": "미래융합학부(경찰범죄심리학전공)",
+   "url": "https://safe.pknu.ac.kr/safe/1342"
+  },
+  {
+   "id": "미래융합학부사회복지서비스학전공",
+   "college": "미래융합학부",
+   "name": "미래융합학부(사회복지서비스학전공)",
+   "url": "https://icms.pknu.ac.kr/Welfare/7424"
+  },
+  {
+   "id": "미래융합학부기계조선공조공학전공",
+   "college": "미래융합학부",
+   "name": "미래융합학부(기계조선에너지시스템공학전공)",
+   "url": "https://msce.pknu.ac.kr/msce/4627"
+  },
+  {
+   "id": "미래융합학부전기전자SW공학전공",
+   "college": "미래융합학부",
+   "name": "미래융합학부(전기전자SW공학전공)",
+   "url": "https://eese.pknu.ac.kr/eese/4055"
+  },
+  {
+   "id": "글로벌자율전공학부",
+   "college": "글로벌자율전공학부",
+   "name": "글로벌 자율전공학부",
+   "url": "https://duem.pknu.ac.kr/duem/1592"
+  },
+  {
+   "id": "본부자유전공학부",
+   "college": "자유전공학부",
+   "name": "자유전공학부",
+   "url": "https://icms.pknu.ac.kr/liberal/7027"
+  },
+  {
+   "id": "수상레저관",
+   "college": "체육진흥원",
+   "name": "수상레저관 공지사항",
+   "url": "https://sports.pknu.ac.kr/kr/index.php?pCode=MN0000047"
+  },
+  {
+   "id": "학부대학",
+   "college": "학부대학",
+   "name": "학부대학 (단과대)",
+   "url": "https://college.pknu.ac.kr/college/801"
+  },
+  {
+   "id": "진로취업비교과",
+   "college": "진로·취업",
+   "name": "비교과 프로그램",
+   "url": "https://pknujob.pknu.ac.kr/42/110",
+   "hasDeptOffice": false
+  },
+  {
+   "id": "진로취업일반채용",
+   "college": "진로·취업",
+   "name": "일반채용",
+   "url": "https://pknujob.pknu.ac.kr/42/37",
+   "hasDeptOffice": false
+  },
+  {
+   "id": "진로취업공모전",
+   "college": "진로·취업",
+   "name": "공모전·대외활동",
+   "url": "https://pknujob.pknu.ac.kr/42/42",
+   "hasDeptOffice": false
+  },
+  {
+   "id": "진로취업교육설명회",
+   "college": "진로·취업",
+   "name": "교육 및 설명회",
+   "url": "https://pknujob.pknu.ac.kr/42/43",
+   "hasDeptOffice": false
+  },
+  {
+   "id": "진로취업공지",
+   "college": "진로·취업",
+   "name": "진로·취업 공지사항",
+   "url": "https://pknujob.pknu.ac.kr/42/30",
+   "hasDeptOffice": false
+  },
+  {
+   "id": "ocu_notice",
+   "college": "기타",
+   "name": "OCU 전체공지",
+   "url": "https://www.ocu.ac.kr/CampusBoard.do?cmd=viewBoardList&menuInfoId=home_00224",
+   "hasDeptOffice": false
+  },
+  {
+   "id": "kcu_notice",
+   "college": "기타",
+   "name": "KCU 공지사항",
+   "url": "https://www.kcucon.or.kr/index.asp",
+   "hasDeptOffice": false
+  }
+ ]
+}
