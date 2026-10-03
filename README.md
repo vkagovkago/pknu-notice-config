@@ -72,6 +72,7 @@ python tools/make_boards_json.py <이 저장소>/boards.json
 
 | 항목 | 설명 |
 | --- | --- |
+| `version` | 고칠 때마다 1씩 올린다. 앱은 APK에 든 목록과 여기 목록 중 번호가 큰 쪽을 쓴다(안 올리면 새 APK의 목록이 이긴다). |
 | `chatModel` | 챗봇이 쓰는 Gemini 모델 이름. 모델이 단종되면 여기만 바꾸면 됩니다. |
 | `items[].category` | 묶음(앱 사용 / 학사 / 학교생활) |
 | `items[].q` · `items[].a` | 질문과 답. 질문은 서로 달라야 합니다. |
