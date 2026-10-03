@@ -1,0 +1,31 @@
+# 빈 강의실 자료(rooms.json)를 강의계획서에서 다시 모아 올린다. 개강 직후와 매달 1일에 돌고,
+# Actions 화면에서 "Run workflow"로 바로 돌릴 수도 있다. 약 20분 걸린다.
+name: 빈 강의실 자료 갱신
+
+on:
+  schedule:
+    - cron: "0 18 5 3,9 *"   # 3·9월 5일 03:00 (한국 시간) — 개강 직후
+    - cron: "0 18 1 * *"     # 매달 1일 03:00 — 강의실 변경 반영
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      # 날짜로 학기를 고르고(계절학기면 다음 정규 학기까지 본다), 강의실이 50곳 미만이면 저장하지 않는다
+      - run: python tools/make_rooms_json.py auto rooms.json
+      - name: 바뀌었으면 올리기
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rooms.json
+          if git diff --cached --quiet; then echo "바뀐 것 없음"; else git commit -m "빈 강의실 자료 자동 갱신" && git push; fi

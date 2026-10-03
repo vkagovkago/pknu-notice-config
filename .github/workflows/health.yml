@@ -1,0 +1,24 @@
+# 앱이 기대는 학교·외부 데이터가 지금도 예전 모양으로 오는지 매일 확인한다.
+# 하나라도 깨지면 실패로 끝나고 GitHub가 저장소 주인에게 메일을 보낸다. 결과 표는 실행 화면의 Summary.
+name: 데이터 확인
+
+on:
+  schedule:
+    - cron: "0 21 * * *"   # 매일 06:00 (한국 시간)
+  workflow_dispatch:
+  push:
+    paths:
+      - "tools/**"
+      - ".github/workflows/health.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - run: python tools/health_check.py boards.json
