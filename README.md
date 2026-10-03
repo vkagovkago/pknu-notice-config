@@ -100,3 +100,8 @@ python tools/make_rooms_json.py 2026 U0003002 rooms.json
 | --- | --- | --- |
 | 데이터 확인 (`health.yml`) | 매일 06:00 | 이루미·리포트 서버·학사일정·학사공지·학식·캠퍼스맵·KCU·OCU·공휴일·학과 게시판 107곳이 예전 모양으로 오는지 확인. 깨지면 실패 메일 |
 | 빈 강의실 자료 갱신 (`rooms.yml`) | 3·9월 5일, 매달 1일 | `rooms.json`을 다시 만들어 올림 |
+
+## version.json — 새 버전 알림
+
+앱은 하루 한 번 이 파일을 받아 `versionCode`가 설치된 앱보다 크면 홈에 "새 버전이 나왔어요"를 띄웁니다.
+**APK를 배포할 때마다 함께 고칩니다.** `url`에는 APK를 받을 공유 링크(OneDrive `1drv.ms`·`onedrive.live.com`, GitHub, 학교 주소만 허용)를 넣습니다. 비워두면 "처음 받은 링크에서 새로 받아주세요"라고만 안내합니다.
