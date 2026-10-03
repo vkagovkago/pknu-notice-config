@@ -90,5 +90,13 @@ python tools/make_boards_json.py <이 저장소>/boards.json
 python tools/make_rooms_json.py 2026 U0003002 rooms.json
 ```
 
-앱 소스의 `tools/make_rooms_json.py`로 만듭니다. 학교 서버에 4개씩만 동시에 요청하고, 20분쯤 걸립니다.
+`tools/make_rooms_json.py`로 만듭니다(앱 소스와 같은 파일). 학교 서버에 4개씩만 동시에 요청하고, 20분쯤 걸립니다.
+**GitHub Actions(빈 강의실 자료 갱신)가 3·9월 5일과 매달 1일에 알아서 돌립니다.** 급하면 Actions 화면에서 Run workflow.
 강의실이 50곳 미만이면 앱은 수집이 실패한 파일로 보고 버립니다.
+
+## GitHub Actions
+
+| 작업 | 언제 | 하는 일 |
+| --- | --- | --- |
+| 데이터 확인 (`health.yml`) | 매일 06:00 | 이루미·리포트 서버·학사일정·학사공지·학식·캠퍼스맵·KCU·OCU·공휴일·학과 게시판 107곳이 예전 모양으로 오는지 확인. 깨지면 실패 메일 |
+| 빈 강의실 자료 갱신 (`rooms.yml`) | 3·9월 5일, 매달 1일 | `rooms.json`을 다시 만들어 올림 |
