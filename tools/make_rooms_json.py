@@ -72,14 +72,14 @@ def list_courses(year, term, grsc):
     return out
 
 
-def plan_info(year, term, c):
+def plan_info(year, term, c, attempts=5, timeout=60):
     in_param = f"('{c['no']}','{c['cls']}','{c['staff']}','U0253001')"
     mrd_param = (f"/rcontype [Data Server] /rf [{DATA_SERVER}] /rsn [jdbc/UniDS]\n"
                  f"/rv P_YY[{year}] P_SHTM_CD[{term}] P_IN_PARAM[{in_param}]\n"
                  f"/rp [{year}] [{term}] [{in_param}]")
-    for attempt in range(5):
+    for attempt in range(attempts):
         try:
-            r = REPORT.post(SERVICE, timeout=60, headers={"Referer": EMBED, "User-Agent": UA}, data={
+            r = REPORT.post(SERVICE, timeout=timeout, headers={"Referer": EMBED, "User-Agent": UA}, data={
                 "opcode": "700", "mrd_path": MRD_URL, "mrd_param": mrd_param, "mrd_plain_param": "",
                 "mrd_data": "", "runtime_param": "", "mmlVersion": "0", "protocol": "sync"})
             if len(r.text) < 300:
@@ -158,34 +158,54 @@ def terms_by_date(today):
 def build(year, term):
     courses = list_courses(year, term, "U0001001") + list_courses(year, term, "U0001002")
     print(f"{year} {term} 과목 {len(courses)}개", flush=True)
-    rooms, done, used, failed = {}, 0, 0, 0
+    rooms, done, used = {}, 0, 0
 
     def work(c):
         return c, plan_info(year, term, c)
 
     # 학교 서버에 몰아치지 않게 4개씩만 동시에 부른다
     with ThreadPoolExecutor(4) as pool:
+        results = []
         for c, info in pool.map(work, courses):
             done += 1
             if done % 200 == 0:
                 print(f"{done}/{len(courses)}", flush=True)
-            if info is FAILED:
-                failed += 1
-                continue
-            if not info:
-                continue
-            blocks = parse_blocks(info[0])
-            names = ROOM.findall(info[1])
-            if not blocks or not names:
-                continue
-            used += 1
-            times = slots(blocks, c["credit"])
-            # 강의실이 요일 수만큼 적혀 있으면 요일마다 짝짓고, 아니면 모든 시간에 모든 강의실을
-            # 쓰는 것으로 본다 — 비어 있다고 잘못 알려주는 것보다 덜 알려주는 게 낫다
-            for i, (day, start, end) in enumerate(times):
-                targets = [names[i]] if len(names) == len(times) else names
-                for room in targets:
-                    rooms.setdefault(room, set()).add((day, start, end))
+            results.append((c, info))
+    # 해외 서버(GitHub Actions)에서는 동시에 부르면 일부가 끝내 실패한다(약 20%). 실패한 것만 모아
+    # 하나씩, 사이를 두고 다시 받는다 — 서버가 숨 돌릴 틈을 주면 대부분 받아진다.
+    # 재시도 전체를 25분 안에 끝낸다(워크플로 제한 60분) — 시간이 다 되면 남은 건 실패로 둔다.
+    deadline = time.time() + 25 * 60
+    for round_no in range(1, 4):
+        retry = [c for c, info in results if info is FAILED]
+        if not retry or time.time() > deadline:
+            break
+        print(f"재시도 {round_no}회차: {len(retry)}개", flush=True)
+        fixed = {}
+        for c in retry:
+            if time.time() > deadline:
+                break
+            time.sleep(1.0 * round_no)
+            fixed[id(c)] = plan_info(year, term, c, attempts=2, timeout=30)
+        results = [(c, fixed.get(id(c), info)) for c, info in results]
+    failed = 0
+    for c, info in results:
+        if info is FAILED:
+            failed += 1
+            continue
+        if not info:
+            continue
+        blocks = parse_blocks(info[0])
+        names = ROOM.findall(info[1])
+        if not blocks or not names:
+            continue
+        used += 1
+        times = slots(blocks, c["credit"])
+        # 강의실이 요일 수만큼 적혀 있으면 요일마다 짝짓고, 아니면 모든 시간에 모든 강의실을
+        # 쓰는 것으로 본다 — 비어 있다고 잘못 알려주는 것보다 덜 알려주는 게 낫다
+        for i, (day, start, end) in enumerate(times):
+            targets = [names[i]] if len(names) == len(times) else names
+            for room in targets:
+                rooms.setdefault(room, set()).add((day, start, end))
     print(f"받아오지 못한 강의계획서 {failed}개", flush=True)
     return rooms, used
 
