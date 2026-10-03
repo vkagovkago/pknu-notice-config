@@ -77,9 +77,9 @@ def plan_info(year, term, c):
     mrd_param = (f"/rcontype [Data Server] /rf [{DATA_SERVER}] /rsn [jdbc/UniDS]\n"
                  f"/rv P_YY[{year}] P_SHTM_CD[{term}] P_IN_PARAM[{in_param}]\n"
                  f"/rp [{year}] [{term}] [{in_param}]")
-    for attempt in range(3):
+    for attempt in range(5):
         try:
-            r = REPORT.post(SERVICE, timeout=40, headers={"Referer": EMBED, "User-Agent": UA}, data={
+            r = REPORT.post(SERVICE, timeout=60, headers={"Referer": EMBED, "User-Agent": UA}, data={
                 "opcode": "700", "mrd_path": MRD_URL, "mrd_param": mrd_param, "mrd_plain_param": "",
                 "mrd_data": "", "runtime_param": "", "mmlVersion": "0", "protocol": "sync"})
             if len(r.text) < 300:
@@ -94,8 +94,13 @@ def plan_info(year, term, c):
                 return "" if value in LABELS else value
             return after("강의시간"), after("강의실")
         except requests.RequestException:
-            time.sleep(2 * (attempt + 1))
-    return None
+            time.sleep(3 * (attempt + 1))
+    return FAILED
+
+
+# 강의계획서가 없는 과목(None)과 받아오지 못한 과목(FAILED)을 가른다 — 해외 서버(GitHub Actions)에서
+# 돌리면 일부를 못 받아와 자료가 줄어드는 일이 있었다(702곳 → 548곳).
+FAILED = object()
 
 
 def parse_blocks(text):
@@ -153,7 +158,7 @@ def terms_by_date(today):
 def build(year, term):
     courses = list_courses(year, term, "U0001001") + list_courses(year, term, "U0001002")
     print(f"{year} {term} 과목 {len(courses)}개", flush=True)
-    rooms, done, used = {}, 0, 0
+    rooms, done, used, failed = {}, 0, 0, 0
 
     def work(c):
         return c, plan_info(year, term, c)
@@ -164,6 +169,9 @@ def build(year, term):
             done += 1
             if done % 200 == 0:
                 print(f"{done}/{len(courses)}", flush=True)
+            if info is FAILED:
+                failed += 1
+                continue
             if not info:
                 continue
             blocks = parse_blocks(info[0])
@@ -178,6 +186,7 @@ def build(year, term):
                 targets = [names[i]] if len(names) == len(times) else names
                 for room in targets:
                     rooms.setdefault(room, set()).add((day, start, end))
+    print(f"받아오지 못한 강의계획서 {failed}개", flush=True)
     return rooms, used
 
 
@@ -200,6 +209,15 @@ def main():
     if len(rooms) < 50:
         print(f"강의실 {len(rooms)}곳뿐이라 저장하지 않음")
         sys.exit(1)
+    # 같은 학기의 기존 자료보다 크게 줄었으면 일부를 못 받아온 것이다 — 덮지 않는다
+    term_key = f"{year}-{SEASON_TAG[term]}"
+    try:
+        old = json.load(open(dst, encoding="utf-8"))
+        if old.get("term") == term_key and len(rooms) < len(old.get("rooms", {})) * 0.9:
+            print(f"강의실 {len(rooms)}곳 — 기존 {len(old['rooms'])}곳보다 크게 적어 저장하지 않음")
+            sys.exit(0)
+    except (OSError, ValueError):
+        pass
     data = {
         "version": 1,
         "term": f"{year}-{SEASON_TAG[term]}",
