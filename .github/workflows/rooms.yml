@@ -7,6 +7,11 @@ on:
     - cron: "0 18 5 3,9 *"   # 3·9월 5일 03:00 (한국 시간) — 개강 직후
     - cron: "0 18 1 * *"     # 매달 1일 03:00 — 강의실 변경 반영
   workflow_dispatch:
+  # 이 파일이나 수집 스크립트를 고치면 한 번 돌려 확인한다
+  push:
+    paths:
+      - "tools/make_rooms_json.py"
+      - ".github/workflows/rooms.yml"
 
 permissions:
   contents: write
