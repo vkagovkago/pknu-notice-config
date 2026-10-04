@@ -516,7 +516,7 @@ routes.push = {
     }
     const on = store.get("pushOn", false);
     return `<section class="card"><h2>새 공지 알림</h2>
-      <p class="sub">관심 게시판(${myBoards().length}곳)에 새 글이 올라오면 알려드려요. 학교 사이트를 30분마다 확인해서 조금 늦을 수 있어요.</p>
+      <p class="sub">관심 게시판(${myBoards().length}곳)에 새 글이 올라오면 알려드려요. 학교 사이트를 30분마다 확인해서 조금 늦을 수 있고, 밤 22시~아침 8시에는 보내지 않아요.</p>
       ${ios && !standalone ? '<p class="note">⚠ 아이폰은 홈 화면에 추가한 아이콘으로 열어야 알림을 켤 수 있어요.</p>' : ""}
       <div class="btns"><button class="btn" id="pon">${on ? "알림 게시판 다시 맞추기" : "알림 켜기"}</button>${on ? '<button class="btn danger" id="poff">알림 끄기</button>' : ""}</div></section>`;
   },

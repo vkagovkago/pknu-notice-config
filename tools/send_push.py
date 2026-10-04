@@ -15,6 +15,12 @@ import requests
 
 MAX_PER_BOARD = 3          # 한 번에 글이 몰려도 게시판당 이만큼만 알린다
 RECENT_DAYS = 3            # 날짜가 이보다 오래된 글은 "새 글"로 치지 않는다(게시판이 되살아날 때 옛 글 폭탄 방지)
+QUIET = (22, 8)            # 이 시간(한국 시각)에는 웹 푸시를 보내지 않는다. 앱은 PushTopics.isQuietHour로 같은 규칙.
+
+
+def is_quiet(now=None):
+    h = (now or dt.datetime.now(dt.timezone(dt.timedelta(hours=9)))).hour
+    return h >= QUIET[0] or h < QUIET[1]
 
 
 def board_topic(board_id):
@@ -107,6 +113,11 @@ def main():
         })
         print("android", name, code, text[:120] if code != 200 else "")
 
+    # 웹은 받는 즉시 알림이 뜬다 — 밤에는 보내지 않는다(그 사이 글은 웹앱 공지 탭에서 보인다).
+    # 안드로이드는 신호만 보내고 앱이 밤인지 보고 거른다.
+    if is_quiet():
+        print("밤 시간 — 웹 푸시 건너뜀")
+        return
     subs = web_tokens(project, token)
     dead = []
     for tok, boards, doc_name in subs:
