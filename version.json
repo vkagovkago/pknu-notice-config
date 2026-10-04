@@ -1,6 +1,6 @@
 {
-  "versionCode": 191,
-  "versionName": "0.144.1",
+  "versionCode": 192,
+  "versionName": "0.145.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "빠른 새 공지 알림(원하면 설정 > 알림에서 켜기, 밤에는 안 보냄), 강의계획서 AI 요약, 챗봇이 학사일정도 보고 답해요. v0.141 이하에서 넘어오면 이전 앱에서 설정 > 설정 백업 > 내보내기 후 새 앱에서 가져오기를 해 주세요."
+  "notes": "새 공지 알림에 제목이 보이고 키워드 설정대로만 와요. 안 읽은 알림은 합쳐지고, 마감·시험·과제는 한 알림으로. v0.141 이하에서 넘어오면 이전 앱에서 설정 > 설정 백업 > 내보내기 후 새 앱에서 가져오기를 해 주세요."
 }
