@@ -1,6 +1,6 @@
 {
-  "versionCode": 194,
-  "versionName": "0.147.0",
+  "versionCode": 195,
+  "versionName": "1.1.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "AI 챗봇 버튼을 알아보기 쉽게, 개인정보·데이터 안내(오류 보고 끄기·데이터 모두 지우기), 열람실 좌석 기준 시각·1분마다 새로고침. v0.141 이하에서 넘어오면 이전 앱에서 설정 > 설정 백업 > 내보내기 후 새 앱에서 가져오기를 해 주세요."
+  "notes": "정식 배포 버전 1.1.0. AI 챗봇 버튼, 개인정보·데이터 안내, 열람실 좌석 실시간 갱신, 공지 알림 정리(제목 표시·키워드대로·합치기) 등. v0.141 이하에서 넘어오면 이전 앱에서 설정 > 설정 백업 > 내보내기 후 새 앱에서 가져오기를 해 주세요."
 }
