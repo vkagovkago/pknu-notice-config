@@ -1,0 +1,21 @@
+rules_version = '2';
+// 웹앱 새 공지 알림 구독(web/app.js setPush)만 쓴다. Firebase 콘솔 > Firestore > 규칙에 그대로 붙여 넣는다.
+// - 누구도 목록을 읽을 수 없다(읽기는 서버의 서비스 계정만 — 규칙을 거치지 않는다).
+// - 자기 토큰 문서만 만들고 고칠 수 있다: 문서 id = 토큰, 칸은 token·boards·updated뿐, 게시판 60개까지.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /webPush/{token} {
+      allow read: if false;
+      allow create, update: if token.size() < 500
+        && request.resource.data.keys().hasOnly(['token', 'boards', 'updated'])
+        && request.resource.data.token == token
+        && request.resource.data.boards is list
+        && request.resource.data.boards.size() <= 60
+        && request.resource.data.updated is int;
+      allow delete: if true;  // 토큰을 아는 쪽(그 브라우저)만 지울 수 있다
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
