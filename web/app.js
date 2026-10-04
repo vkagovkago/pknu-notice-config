@@ -469,13 +469,26 @@ function countOne() {
   const u = store.get("aiUse", {});
   store.set("aiUse", { day: todayKey(), n: (u.day === todayKey() ? u.n : 0) + 1 });
 }
+// Firebase 앱 하나를 만들고, 키가 있으면 App Check(reCAPTCHA Enterprise)를 붙인다.
+// 2026-11-02부터 Firebase AI Logic은 App Check 토큰이 없는 요청을 막는다.
+let fbApp;
+async function firebaseApp() {
+  if (fbApp) return fbApp;
+  const { initializeApp, getApps } = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_JS}/firebase-app.js`);
+  fbApp = getApps()[0] || initializeApp(window.FIREBASE_CONFIG);
+  const key = window.FIREBASE_CONFIG.recaptchaEnterpriseKey;
+  if (key) {
+    const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_JS}/firebase-app-check.js`);
+    initializeAppCheck(fbApp, { provider: new ReCaptchaEnterpriseProvider(key), isTokenAutoRefreshEnabled: true });
+  }
+  return fbApp;
+}
 let aiModel;
 async function askAI(history, q) {
   const v = FIREBASE_JS;
-  const { initializeApp, getApps } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`);
   const { getAI, getGenerativeModel, GoogleAIBackend } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-ai.js`);
   if (!aiModel) {
-    const app = getApps()[0] || initializeApp(window.FIREBASE_CONFIG);
+    const app = await firebaseApp();
     aiModel = getGenerativeModel(getAI(app, { backend: new GoogleAIBackend() }), {
       model: data.faq?.chatModel || "gemini-3.8-flash",
       systemInstruction: systemPrompt(),
@@ -528,10 +541,9 @@ routes.push = {
 async function setPush(on) {
   try {
     const v = FIREBASE_JS;
-    const { initializeApp, getApps } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-app.js`);
     const { getMessaging, getToken, deleteToken } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-messaging.js`);
     const { getFirestore, doc, setDoc, deleteDoc } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-firestore.js`);
-    const app = getApps()[0] || initializeApp(window.FIREBASE_CONFIG);
+    const app = await firebaseApp();
     const messaging = getMessaging(app), db = getFirestore(app);
     const reg = await navigator.serviceWorker.ready;
     if (!on) {
