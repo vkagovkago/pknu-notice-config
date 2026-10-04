@@ -1,6 +1,7 @@
 {
-  "version": 11,
+  "version": 12,
   "chatModel": "gemini-3.8-flash",
+  "dailyLimit": 30,
   "items": [
     {
       "category": "앱 사용",
