@@ -1,6 +1,6 @@
 {
-  "versionCode": 189,
-  "versionName": "0.143.0",
+  "versionCode": 190,
+  "versionName": "0.144.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "앱 주소가 바뀌어 새 앱으로 따로 설치돼요. 먼저 지금 앱에서 설정 > 설정 백업 > 내보내기로 파일을 저장하고, 새 앱에서 가져오기를 하면 시간표·설정이 그대로 옮겨져요. 옮긴 뒤 이전 앱은 지워도 돼요. (AI 챗봇 연결 포함)"
+  "notes": "빠른 새 공지 알림, 강의계획서 AI 요약, 챗봇이 학사일정도 보고 답해요. v0.141 이하에서 넘어오면 이전 앱에서 설정 > 설정 백업 > 내보내기 후 새 앱에서 가져오기를 해 주세요."
 }
