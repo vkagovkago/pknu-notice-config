@@ -104,4 +104,4 @@ python tools/make_rooms_json.py 2026 U0003002 rooms.json
 ## version.json — 새 버전 알림
 
 앱은 하루 한 번 이 파일을 받아 `versionCode`가 설치된 앱보다 크면 홈에 "새 버전이 나왔어요"를 띄웁니다.
-**APK를 배포할 때마다 함께 고칩니다.** `url`에는 APK를 받을 공유 링크(OneDrive `1drv.ms`·`onedrive.live.com`, GitHub, 학교 주소만 허용)를 넣습니다. 비워두면 "처음 받은 링크에서 새로 받아주세요"라고만 안내합니다.
+**APK를 배포할 때마다 함께 고칩니다.** `url`은 항상 GitHub 릴리스의 최신 링크(`https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk`)이고, 새 릴리스에 `pknu-notice.apk`라는 이름으로 APK를 올리면 링크는 그대로 최신 파일을 가리킵니다. 앱은 GitHub·OneDrive·SharePoint·학교 주소만 열고, `url`을 비워두면 "처음 받은 링크에서 새로 받아주세요"라고만 안내합니다.
