@@ -1,0 +1,66 @@
+# 웹앱(아이폰 등)을 GitHub Pages에 올린다. 30분마다 학교 공지·학사일정·학식을 다시 모으고(자료는 커밋하지
+# 않고 배포본에만 넣는다), 새 공지가 있으면 푸시를 보낸다(FIREBASE_SA 비밀값이 있을 때만).
+# 주소: https://vkagovkago.github.io/pknu-notice-config/
+name: 웹앱
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"   # 30분마다 (정각은 Actions가 붐벼 늦어지므로 비켜서)
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "tools/build_web_data.py"
+      - "tools/send_push.py"
+      - "boards.json"
+      - "faq.json"
+      - "shuttle.json"
+      - ".github/workflows/pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4 google-auth
+      - name: 화면 파일 + 지난번 자료
+        run: |
+          mkdir -p site/data
+          cp -r web/. site/
+          # 지난번 배포본의 공지 목록 — 받기 실패한 게시판은 이걸 그대로 쓰고, 새 글 비교에도 쓴다
+          curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/notices.json -o site/data/notices.json || true
+          curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/holidays.json -o site/data/holidays.json || true
+          [ -s site/data/notices.json ] && cp site/data/notices.json prev-notices.json || true
+      - run: python tools/build_web_data.py site/data
+      - name: 새 공지 푸시
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: python tools/send_push.py prev-notices.json site/data/notices.json
+        continue-on-error: true   # 푸시가 실패해도 웹앱은 올린다
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

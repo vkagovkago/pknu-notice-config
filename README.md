@@ -106,3 +106,17 @@ python tools/make_rooms_json.py 2026 U0003002 rooms.json
 
 앱은 하루 한 번 이 파일을 받아 `versionCode`가 설치된 앱보다 크면 홈에 "새 버전이 나왔어요"를 띄웁니다.
 **APK를 배포할 때마다 함께 고칩니다.** `url`은 항상 GitHub 릴리스의 최신 링크(`https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk`)이고, 새 릴리스에 `pknu-notice.apk`라는 이름으로 APK를 올리면 링크는 그대로 최신 파일을 가리킵니다. 앱은 GitHub·OneDrive·SharePoint·학교 주소만 열고, `url`을 비워두면 "처음 받은 링크에서 새로 받아주세요"라고만 안내합니다.
+
+## 웹앱 (아이폰 등) — `web/`
+
+주소: https://vkagovkago.github.io/pknu-notice-config/ — 사파리에서 열고 **공유 → 홈 화면에 추가**하면 앱처럼 쓴다.
+
+| 파일 | 하는 일 |
+| --- | --- |
+| `web/` | 화면(HTML·JS·CSS, 빌드 없음). 시간표·관심 게시판은 브라우저(localStorage)에만 저장 |
+| `web/firebase-config.js` | Firebase 웹 앱 설정 + 웹 푸시 공개 키(공개값). `null`이면 AI 챗봇·새 공지 알림은 "준비 중" |
+| `tools/build_web_data.py` | 공지(게시판 108곳)·학사일정·학식·공휴일을 모아 `data/*.json`으로. 파서는 안드로이드 앱과 같은 규칙 |
+| `tools/send_push.py` | 지난번과 비교해 새 글이 있는 게시판에 FCM 푸시(안드로이드는 토픽, 웹은 Firestore `webPush`의 토큰) |
+| `.github/workflows/pages.yml` | 30분마다 위 둘을 돌리고 Pages에 배포. 자료는 커밋하지 않는다 |
+
+푸시는 저장소 비밀값 `FIREBASE_SA`(Firebase 서비스 계정 JSON)가 있어야 나간다. 없으면 건너뛴다.

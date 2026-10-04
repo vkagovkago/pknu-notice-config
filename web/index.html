@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>부경대 공지알리미</title>
+<meta name="description" content="부경대 공지·학사일정·학식·셔틀·시간표를 한곳에서. 학생이 만든 비공식 앱입니다.">
+<meta name="theme-color" content="#1E63C7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="공지알리미">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <button class="back" id="back" aria-label="뒤로" hidden>‹</button>
+  <h1 id="title">부경대 공지알리미</h1>
+  <button class="icon" id="refresh" aria-label="새로고침">⟳</button>
+</header>
+<main id="view" tabindex="-1"></main>
+<nav class="tabs" aria-label="메뉴">
+  <a href="#home" data-tab="home"><span>🏠</span>홈</a>
+  <a href="#notices" data-tab="notices"><span>🔔</span>공지</a>
+  <a href="#menu" data-tab="menu"><span>🍚</span>학식</a>
+  <a href="#timetable" data-tab="timetable"><span>🗓️</span>시간표</a>
+  <a href="#more" data-tab="more"><span>☰</span>더보기</a>
+</nav>
+<script src="firebase-config.js"></script>
+<script src="app.js" defer></script>
+</body>
+</html>
