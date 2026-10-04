@@ -364,6 +364,7 @@ routes.more = {
       </section>
       <section class="card"><h2>앱 정보</h2>
         <p class="sub">학생이 만든 비공식 앱이에요. 정확한 내용은 꼭 학교 공지 원문으로 확인해 주세요.</p>
+        <p class="sub">로그인이 없고 개발자 서버도 없어요. 시간표·관심 게시판은 이 브라우저에만 저장돼서 개발자도 볼 수 없어요. AI 챗봇 질문은 답을 만들기 위해 Google(Gemini)로, 새 공지 알림을 켜면 알림 번호와 고른 게시판만 Firebase로 가요.</p>
         <p class="sub">안드로이드는 <a href="${ANDROID_APK}">앱(APK)</a>으로 위젯·수업 알림까지 쓸 수 있어요.</p>
       </section>`;
   },

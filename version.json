@@ -1,6 +1,6 @@
 {
-  "versionCode": 192,
-  "versionName": "0.145.0",
+  "versionCode": 193,
+  "versionName": "0.146.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "새 공지 알림에 제목이 보이고 키워드 설정대로만 와요. 안 읽은 알림은 합쳐지고, 마감·시험·과제는 한 알림으로. v0.141 이하에서 넘어오면 이전 앱에서 설정 > 설정 백업 > 내보내기 후 새 앱에서 가져오기를 해 주세요."
+  "notes": "개인정보·데이터 안내(무엇이 휴대폰에만 있고 무엇이 밖으로 나가는지, 오류 보고 끄기, 데이터 모두 지우기), 열람실 좌석 기준 시각·1분마다 새로고침. v0.141 이하에서 넘어오면 이전 앱에서 설정 > 설정 백업 > 내보내기 후 새 앱에서 가져오기를 해 주세요."
 }
