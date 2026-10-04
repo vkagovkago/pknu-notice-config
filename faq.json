@@ -1,6 +1,6 @@
 {
-  "version": 10,
-  "chatModel": "gemini-2.5-flash",
+  "version": 11,
+  "chatModel": "gemini-3.8-flash",
   "items": [
     {
       "category": "앱 사용",
