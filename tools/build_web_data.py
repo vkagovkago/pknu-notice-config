@@ -24,6 +24,18 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PknuNoticeApp-web (unofficial st
 TIMEOUT = 25
 HTTP = requests.Session()
 HTTP.mount("https://", rooms.LegacyTls())
+# 수산과학대학·해양생산시스템관리학부·생활관 서버는 중간 인증서를 안 보내서 기본 설정으로는 끊긴다.
+# 앱(network_security_config.xml)과 같은 Sectigo 중간 인증서만 더 믿는다 — 다른 위조 인증서는 여전히 거부.
+try:
+    import certifi
+    import tempfile
+    _bundle = os.path.join(tempfile.gettempdir(), "pknu_ca_bundle.pem")
+    with open(_bundle, "w", encoding="utf-8") as f:
+        f.write(open(certifi.where(), encoding="utf-8").read() + "\n"
+                + open(os.path.join(os.path.dirname(__file__), "sectigo_dv_r36.pem"), encoding="utf-8").read())
+    HTTP.verify = _bundle
+except Exception as e:
+    print("ca bundle", e)
 # Accept가 없으면 막는 서버가 있다(행복기숙사 식단 — 404를 돌려준다)
 HTTP.headers.update({"User-Agent": UA, "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
                      "Accept-Language": "ko-KR,ko;q=0.9"})
