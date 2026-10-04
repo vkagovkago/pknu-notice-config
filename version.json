@@ -1,6 +1,6 @@
 {
-  "versionCode": 187,
-  "versionName": "0.141.0",
+  "versionCode": 188,
+  "versionName": "0.142.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "오늘 카드 공강·시험 D-day, 시간표·셔틀 바로가기, 일요일 주간 요약 알림"
+  "notes": "앱 주소가 바뀌어 새 앱으로 따로 설치돼요. 먼저 지금 앱에서 설정 > 설정 백업 > 내보내기로 파일을 저장하고, 새 앱에서 가져오기를 하면 시간표·설정이 그대로 옮겨져요. 옮긴 뒤 이전 앱은 지워도 돼요. (AI 챗봇 연결 포함)"
 }
