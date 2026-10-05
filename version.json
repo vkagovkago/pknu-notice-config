@@ -1,7 +1,7 @@
 {
-  "versionCode": 200,
-  "versionName": "1.4.0",
+  "versionCode": 201,
+  "versionName": "1.4.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "시간표에서 바로 강의계획서를 찾아 담기(교과구분·학점·수업방식으로 좁히기), 강의계획서 미리보기에 강의시간·강의실, 교시와 실제 시각 같이 표시, 담은 과목 학기별 묶기, 시간표 학기 이동 개선, 홈 카드 끌어서 순서 바꾸기. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "녹화 강의(사전제작) 시간 표기. 1.4.0 기능(시간표에서 강의계획서 찾아 담기, 미리보기 강의시간, 학기 이동 개선, 홈 카드 끌어서 순서 바꾸기) 포함. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
