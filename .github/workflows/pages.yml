@@ -53,8 +53,9 @@ jobs:
           V=$(python -c "import json;print(json.load(open('version.json'))['versionName'])")
           F="부경대공지알리미_v$V.apk"
           mkdir -p site/apk site/download
-          curl -sfL https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk -o "site/apk/$F"
           E=$(python -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$F")
+          # 같은 버전이면 지난 배포본에서 가져온다 — 30분마다 릴리스에서 받으면 다운로드 수가 부풀려진다
+          curl -sfL "https://vkagovkago.github.io/pknu-notice-config/apk/$E" -o "site/apk/$F"             || curl -sfL https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk -o "site/apk/$F"
           printf '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="0;url=../apk/%s"><title>부경대 공지알리미 받기</title><p style="font:16px sans-serif;padding:24px">다운로드가 시작되지 않으면 <a href="../apk/%s">%s</a>를 눌러 주세요.</p>' "$E" "$E" "$F" > site/download/index.html
       - run: python tools/build_web_data.py site/data
       - name: 새 공지 푸시
