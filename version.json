@@ -1,7 +1,7 @@
 {
-  "versionCode": 203,
-  "versionName": "1.6.0",
+  "versionCode": 204,
+  "versionName": "1.6.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "이수 학점: 입학연도·전공·복수/부전공으로 졸업 요건 자동 계산, 목표 평점 계산 오류 수정. 새 과목 검색을 지난 학기에서도. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "졸업 요건: 학과 이름이 바뀐 경우 내 전공 과목이 자유선택으로 세지던 문제 수정. 1.6.0(입학연도·전공으로 졸업 요건 자동 계산, 목표 평점 수정) 포함. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
