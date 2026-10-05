@@ -1,7 +1,7 @@
 {
-  "versionCode": 201,
-  "versionName": "1.4.1",
+  "versionCode": 202,
+  "versionName": "1.5.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "녹화 강의(사전제작) 시간 표기. 1.4.0 기능(시간표에서 강의계획서 찾아 담기, 미리보기 강의시간, 학기 이동 개선, 홈 카드 끌어서 순서 바꾸기) 포함. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "시간표 과목 검색을 에브리타임처럼(위에 시간표 미리보기, 전공·검색어·정렬·시간·학년·구분·학점 조건), 녹화 강의(사전제작)도 시간 겹침 계산. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
