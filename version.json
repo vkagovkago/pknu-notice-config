@@ -1,7 +1,7 @@
 {
-  "versionCode": 202,
-  "versionName": "1.5.0",
+  "versionCode": 203,
+  "versionName": "1.6.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "시간표 과목 검색을 에브리타임처럼(위에 시간표 미리보기, 전공·검색어·정렬·시간·학년·구분·학점 조건), 녹화 강의(사전제작)도 시간 겹침 계산. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "이수 학점: 입학연도·전공·복수/부전공으로 졸업 요건 자동 계산, 목표 평점 계산 오류 수정. 새 과목 검색을 지난 학기에서도. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
