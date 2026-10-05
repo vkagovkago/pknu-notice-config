@@ -11,7 +11,7 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin) return;
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.endsWith(".apk")) return;
   // 화면 파일도 네트워크 우선 — 고친 버전이 바로 보이게. 오프라인일 때만 담아둔 것.
   e.respondWith(
     fetch(e.request).then((r) => {

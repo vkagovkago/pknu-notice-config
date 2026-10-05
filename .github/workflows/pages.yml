@@ -15,6 +15,7 @@ on:
       - "tools/send_push.py"
       - "boards.json"
       - "faq.json"
+      - "version.json"
       - "shuttle.json"
       - ".github/workflows/pages.yml"
 
@@ -45,6 +46,16 @@ jobs:
           curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/notices.json -o site/data/notices.json || true
           curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/holidays.json -o site/data/holidays.json || true
           [ -s site/data/notices.json ] && cp site/data/notices.json prev-notices.json || true
+      - name: 안드로이드 APK (한글 파일 이름으로)
+        # GitHub 릴리스는 파일 이름의 한글을 지운다(_v1.1.1.apk). Pages는 경로 그대로 내려주므로
+        # 최신 릴리스 APK를 "부경대공지알리미_v버전.apk"로 넣고, 고정 주소 download/가 그리로 보낸다.
+        run: |
+          V=$(python -c "import json;print(json.load(open('version.json'))['versionName'])")
+          F="부경대공지알리미_v$V.apk"
+          mkdir -p site/apk site/download
+          curl -sfL https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk -o "site/apk/$F"
+          E=$(python -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$F")
+          printf '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="0;url=../apk/%s"><title>부경대 공지알리미 받기</title><p style="font:16px sans-serif;padding:24px">다운로드가 시작되지 않으면 <a href="../apk/%s">%s</a>를 눌러 주세요.</p>' "$E" "$E" "$F" > site/download/index.html
       - run: python tools/build_web_data.py site/data
       - name: 새 공지 푸시
         env:
