@@ -1,5 +1,6 @@
 rules_version = '2';
-// 웹앱 새 공지 알림 구독(web/app.js setPush)만 쓴다. Firebase 콘솔 > Firestore > 규칙에 그대로 붙여 넣는다.
+// Firebase 콘솔 > Firestore > 규칙에 그대로 붙여 넣는다.
+// webPush: 웹앱 새 공지 알림 구독(web/app.js setPush).
 // - 누구도 목록을 읽을 수 없다(읽기는 서버의 서비스 계정만 — 규칙을 거치지 않는다).
 // - 자기 토큰 문서만 만들고 고칠 수 있다: 문서 id = 토큰, 칸은 token·boards·updated뿐, 게시판 60개까지.
 service cloud.firestore {
@@ -13,6 +14,25 @@ service cloud.firestore {
         && request.resource.data.boards.size() <= 60
         && request.resource.data.updated is int;
       allow delete: if true;  // 토큰을 아는 쪽(그 브라우저)만 지울 수 있다
+    }
+    // stats: 사용자 수·다운로드 수(앱 UsageStats.kt, 웹 download/). 숫자 칸 하나를 +1 하는 것만 허용.
+    // 누구나 읽을 수 있다(버전별 숫자뿐이라 감출 것이 없다).
+    function statsDoc(doc) {
+      return doc in ['devices', 'downloads'] || doc.matches('d[0-9]{4}-[0-9]{2}-[0-9]{2}');
+    }
+    match /stats/{doc} {
+      allow get, list: if true;
+      allow create: if statsDoc(doc)
+        && request.resource.data.size() == 1
+        && request.resource.data.keys()[0].matches('v[0-9_]{1,20}')
+        && request.resource.data.values()[0] == 1;
+      allow update: if statsDoc(doc)
+        && request.resource.data.size() <= 200
+        && request.resource.data.diff(resource.data).affectedKeys().size() == 1
+        && request.resource.data.diff(resource.data).affectedKeys().toList()[0].matches('v[0-9_]{1,20}')
+        && request.resource.data[request.resource.data.diff(resource.data).affectedKeys().toList()[0]]
+           == resource.data.get(request.resource.data.diff(resource.data).affectedKeys().toList()[0], 0) + 1;
+      allow delete: if false;
     }
     match /{document=**} {
       allow read, write: if false;
