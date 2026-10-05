@@ -194,6 +194,16 @@ def build(year, term):
             time.sleep(1.0 * round_no)
             fixed[id(c)] = plan_info(year, term, c, attempts=2, timeout=30)
         results = [(c, fixed.get(id(c), info)) for c, info in results]
+    # 국문 강의계획서가 올라와 있다는 과목(KOR_YN=Y)인데 비어 온 것은, 해외 서버에서 바쁜 학교 서버가 오류 문구로
+    # 답한 것일 수 있다(강의실이 702곳 → 501곳으로 줄었는데 "못 받은 것"은 0개였다). 한 번 더, 천천히 받는다.
+    again = [c for c, info in results if info is None and c.get("kor") == "Y"]
+    if again and time.time() < deadline:
+        print(f"비어 온 과목 다시 받기: {len(again)}개", flush=True)
+        fixed = {}
+        with ThreadPoolExecutor(2) as pool:
+            for c, info in zip(again, pool.map(lambda c: plan_info(year, term, c, attempts=2, timeout=30), again)):
+                fixed[id(c)] = info
+        results = [(c, fixed.get(id(c)) if id(c) in fixed and fixed[id(c)] not in (None, FAILED) else info) for c, info in results]
     failed = 0
     for c, info in results:
         if info is FAILED:
@@ -224,6 +234,32 @@ def build(year, term):
     return rooms, used, catalog
 
 
+
+# 과목 목록(courses.json). rooms.json 옆에 둔다. 같은 학기 기존 파일보다 크게 줄었으면 덮지 않는다.
+def write_courses(dst, term_key, catalog):
+    import os
+    cdst = os.path.join(os.path.dirname(os.path.abspath(dst)), "courses.json")
+    if len(catalog) < 500:
+        print(f"과목 {len(catalog)}개뿐이라 courses.json은 저장하지 않음")
+        return
+    try:
+        old = json.load(open(cdst, encoding="utf-8"))
+        if old.get("term") == term_key and len(catalog) < len(old.get("rows", [])) * 0.9:
+            print(f"과목 {len(catalog)}개 — 기존 {len(old['rows'])}개보다 크게 적어 courses.json은 저장하지 않음")
+            return
+    except (OSError, ValueError):
+        pass
+    with open(cdst, "w", encoding="utf-8") as f:
+        json.dump({
+            "version": 1, "term": term_key, "generated": date.today().isoformat(),
+            "fields": ["no", "cls", "name", "staffNo", "staff", "college", "dept", "cat", "credit", "method",
+                       "kor", "time", "room", "grade", "grad"],
+            "rows": catalog,
+        }, f, ensure_ascii=False, separators=(",", ":"))
+    with_time = sum(1 for r in catalog if r[11])
+    print(f"과목 {len(catalog)}개(시간 있는 과목 {with_time}개) → {cdst}")
+
+
 def main():
     # python make_rooms_json.py 2026 U0003002 rooms.json   (학기를 직접 고름)
     # python make_rooms_json.py auto rooms.json            (날짜로 학기를 고름 — GitHub Actions용)
@@ -245,6 +281,7 @@ def main():
         sys.exit(1)
     # 같은 학기의 기존 자료보다 크게 줄었으면 일부를 못 받아온 것이다 — 덮지 않는다
     term_key = f"{year}-{SEASON_TAG[term]}"
+    write_courses(dst, term_key, catalog)
     try:
         old = json.load(open(dst, encoding="utf-8"))
         if old.get("term") == term_key and len(rooms) < len(old.get("rooms", {})) * 0.9:
@@ -262,25 +299,6 @@ def main():
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     print(f"강의실 {len(rooms)}곳, 시간 읽은 과목 {used}개 → {dst}")
-
-    # 과목 목록(courses.json). rooms.json 옆에 둔다. 같은 학기 기존 파일보다 크게 줄었으면 덮지 않는다.
-    import os
-    cdst = os.path.join(os.path.dirname(os.path.abspath(dst)), "courses.json")
-    try:
-        old = json.load(open(cdst, encoding="utf-8"))
-        if old.get("term") == term_key and len(catalog) < len(old.get("rows", [])) * 0.9:
-            print(f"과목 {len(catalog)}개 — 기존 {len(old['rows'])}개보다 크게 적어 courses.json은 저장하지 않음")
-            return
-    except (OSError, ValueError):
-        pass
-    with open(cdst, "w", encoding="utf-8") as f:
-        json.dump({
-            "version": 1, "term": term_key, "generated": date.today().isoformat(),
-            "fields": ["no", "cls", "name", "staffNo", "staff", "college", "dept", "cat", "credit", "method",
-                       "kor", "time", "room", "grade", "grad"],
-            "rows": catalog,
-        }, f, ensure_ascii=False, separators=(",", ":"))
-    print(f"과목 {len(catalog)}개 → {cdst}")
 
 
 if __name__ == "__main__":
