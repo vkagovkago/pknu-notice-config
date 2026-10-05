@@ -9,6 +9,10 @@
 #   50분/75분 체계                   → Period.gridFor (주당시간/교시수 >= 1.25면 75분)
 # 앱 코드(Timetable.kt)를 고치면 여기도 같이 고친다.
 #
+# 같은 수집으로 courses.json(그 학기 전체 과목 + 강의시간·강의실·개설학년)도 만든다. 앱의
+# 시간표 "강의계획서에서 찾아 담기"가 이 파일로 시간·학년·강의실을 보여주고 시간대로 걸러낸다
+# (이루미 조회 목록에는 그 값들이 없다).
+#
 #   python tools/make_rooms_json.py 2026 U0003002 rooms.json
 import json
 import re
@@ -68,7 +72,10 @@ def list_courses(year, term, grsc):
         if not col("STAFF_NO") or not col("COLG_NM"):  # 학점교류(KCU·OCU)는 강의실이 없다
             continue
         out.append({"no": col("COURSE_NO"), "cls": col("DCLSS_NO"), "staff": col("STAFF_NO"),
-                    "credit": col("PNT_THEO_PRAC"), "name": col("SBJT_KOR_NM")})
+                    "credit": col("PNT_THEO_PRAC"), "name": col("SBJT_KOR_NM"),
+                    "staffName": col("STAFF_NM"), "college": col("COLG_NM"), "dept": col("DEPT_NM"),
+                    "cat": col("SBJT_FG_NM"), "method": col("LSN_MTHD_FG"), "kor": col("KOR_YN"),
+                    "grad": 1 if grsc == "U0001002" else 0})
     return out
 
 
@@ -92,7 +99,7 @@ def plan_info(year, term, c, attempts=5, timeout=60):
                 value = next((x for x in cells[cells.index(label) + 1:] if x), "")
                 # 값이 비면 다음 칸이 곧바로 다음 라벨이다(원격수업은 강의실이 없다) — 앱과 같은 규칙
                 return "" if value in LABELS else value
-            return after("강의시간"), after("강의실")
+            return after("강의시간"), after("강의실"), after("개설학년")
         except requests.RequestException:
             time.sleep(3 * (attempt + 1))
     return FAILED
@@ -207,7 +214,14 @@ def build(year, term):
             for room in targets:
                 rooms.setdefault(room, set()).add((day, start, end))
     print(f"받아오지 못한 강의계획서 {failed}개", flush=True)
-    return rooms, used
+    # 앱이 읽는 과목 목록. 시간·강의실·학년을 못 받은 과목도 줄은 남긴다(목록이 비면 안 된다).
+    # 열 순서는 앱(CourseCatalog.kt)과 같다.
+    catalog = []
+    for c, info in results:
+        t, r, g = ("", "", "") if (not info or info is FAILED) else (info[0], info[1], info[2])
+        catalog.append([c["no"], c["cls"], c["name"], c["staff"], c["staffName"], c["college"], c["dept"],
+                        c["cat"], c["credit"], c["method"], c["kor"], t, r, g, c["grad"]])
+    return rooms, used, catalog
 
 
 def main():
@@ -218,13 +232,13 @@ def main():
         from datetime import datetime, timedelta, timezone
         today = datetime.now(timezone(timedelta(hours=9))).date()
         for year, term in terms_by_date(today):
-            rooms, used = build(year, term)
+            rooms, used, catalog = build(year, term)
             if len(rooms) >= 50:
                 break
             print(f"{year} {term}: 강의실 {len(rooms)}곳뿐이라 다음 후보로", flush=True)
     else:
         year, term, dst = int(sys.argv[1]), sys.argv[2], sys.argv[3]
-        rooms, used = build(year, term)
+        rooms, used, catalog = build(year, term)
     # 앱은 50곳 미만이면 수집 실패로 보고 버린다 — 그런 파일로 멀쩡한 걸 덮지 않는다
     if len(rooms) < 50:
         print(f"강의실 {len(rooms)}곳뿐이라 저장하지 않음")
@@ -248,6 +262,25 @@ def main():
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     print(f"강의실 {len(rooms)}곳, 시간 읽은 과목 {used}개 → {dst}")
+
+    # 과목 목록(courses.json). rooms.json 옆에 둔다. 같은 학기 기존 파일보다 크게 줄었으면 덮지 않는다.
+    import os
+    cdst = os.path.join(os.path.dirname(os.path.abspath(dst)), "courses.json")
+    try:
+        old = json.load(open(cdst, encoding="utf-8"))
+        if old.get("term") == term_key and len(catalog) < len(old.get("rows", [])) * 0.9:
+            print(f"과목 {len(catalog)}개 — 기존 {len(old['rows'])}개보다 크게 적어 courses.json은 저장하지 않음")
+            return
+    except (OSError, ValueError):
+        pass
+    with open(cdst, "w", encoding="utf-8") as f:
+        json.dump({
+            "version": 1, "term": term_key, "generated": date.today().isoformat(),
+            "fields": ["no", "cls", "name", "staffNo", "staff", "college", "dept", "cat", "credit", "method",
+                       "kor", "time", "room", "grade", "grad"],
+            "rows": catalog,
+        }, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"과목 {len(catalog)}개 → {cdst}")
 
 
 if __name__ == "__main__":
