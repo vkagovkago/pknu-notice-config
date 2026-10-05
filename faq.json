@@ -1,6 +1,6 @@
 {
-  "version": 22,
-  "chatModel": "gemini-3.8-flash",
+  "version": 23,
+  "chatModel": "gemini-3.5-flash-lite",
   "dailyLimit": 30,
   "items": [
     {
@@ -407,5 +407,10 @@
       "a": "학교 홈페이지의 증명서 발급(인터넷)에 학번과 포털 비밀번호로 로그인해 발급해요. 교내 무인발급기는 도서관 1층(07~23시), 공학1관 1층·인문사회경영관 2층(07~22시)에 있어요.",
       "link": "https://www.pknu.ac.kr/main/449"
     }
+  ],
+  "chatModels": [
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
+    "gemini-3.5-flash"
   ]
 }
