@@ -1,6 +1,7 @@
 {
-  "versionCode": 197,
-  "versionName": "1.2.0",
+  "versionCode": 198,
+  "versionName": "1.2.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "화면 정리: AI 챗봇 버튼을 홈 위쪽으로, 공지 필터·설정 카드 접기, 빈 강의실 펼침 메뉴, 열람실 막대를 남은 자리 기준으로. AI 기능 보안 확인(App Check) 포함 — 11월 2일부터는 1.1.1 이상에서만 AI가 동작해요."
+  "notes": "받는 파일 이름을 '부경대공지알리미_v버전.apk'로. 1.2.0 화면 정리(AI 챗봇 버튼을 홈 위쪽으로, 공지 필터·설정 카드 접기, 빈 강의실 펼침 메뉴) 포함. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
