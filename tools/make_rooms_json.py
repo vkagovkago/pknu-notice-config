@@ -235,12 +235,12 @@ def build(year, term):
 
 
 
-# 과목 목록(courses.json). rooms.json 옆에 둔다. 같은 학기 기존 파일보다 크게 줄었으면 덮지 않는다.
-def write_courses(dst, term_key, catalog):
+# 과목 목록 파일 하나를 쓴다. 같은 학기 기존 파일보다 크게 줄었으면 덮지 않는다.
+# 정규 학기는 3천 개 안팎, 계절학기는 수십 개라 최소 개수는 5개로 둔다(그보다 적으면 수집 실패).
+def write_courses_to(cdst, term_key, catalog):
     import os
-    cdst = os.path.join(os.path.dirname(os.path.abspath(dst)), "courses.json")
-    if len(catalog) < 500:
-        print(f"과목 {len(catalog)}개뿐이라 courses.json은 저장하지 않음")
+    if len(catalog) < 5:
+        print(f"과목 {len(catalog)}개뿐이라 {cdst}는 저장하지 않음")
         return
     try:
         old = json.load(open(cdst, encoding="utf-8"))
@@ -260,9 +260,43 @@ def write_courses(dst, term_key, catalog):
     print(f"과목 {len(catalog)}개(시간 있는 과목 {with_time}개) → {cdst}")
 
 
+# 이번 학기 목록. 1.5.0 앱이 읽는 courses.json과, 학기별 파일 courses/<학기>.json(1.5.1부터) 둘 다 쓴다.
+def write_courses(dst, term_key, catalog):
+    import os
+    base = os.path.dirname(os.path.abspath(dst))
+    write_courses_to(os.path.join(base, "courses.json"), term_key, catalog)
+    os.makedirs(os.path.join(base, "courses"), exist_ok=True)
+    write_courses_to(os.path.join(base, "courses", f"{term_key}.json"), term_key, catalog)
+
+
+# 지난 학기까지 학기별 과목 목록을 만든다(시간표에서 지난 학기를 볼 때 쓴다). 한 번 만든 지난 학기는
+# 바뀌지 않으므로 파일이 있으면 건너뛴다(FORCE=1이면 다시). 과목이 없는 학기(아직 안 열린 학기)도 건너뛴다.
+#   python make_rooms_json.py catalog 2019 courses
+def build_catalogs(from_year, out_dir):
+    import os
+    from datetime import datetime, timedelta, timezone
+    os.makedirs(out_dir, exist_ok=True)
+    this_year = datetime.now(timezone(timedelta(hours=9))).year
+    for year in range(from_year, this_year + 1):
+        for term in ("U0003001", "U0003003", "U0003002", "U0003004"):
+            key = f"{year}-{SEASON_TAG[term]}"
+            path = os.path.join(out_dir, f"{key}.json")
+            if os.path.exists(path) and os.environ.get("FORCE") != "1":
+                print(f"{key}: 이미 있음", flush=True)
+                continue
+            if not list_courses(year, term, "U0001001") and not list_courses(year, term, "U0001002"):
+                print(f"{key}: 과목 없음", flush=True)
+                continue
+            _, _, catalog = build(year, term)
+            write_courses_to(path, key, catalog)
+
+
 def main():
     # python make_rooms_json.py 2026 U0003002 rooms.json   (학기를 직접 고름)
     # python make_rooms_json.py auto rooms.json            (날짜로 학기를 고름 — GitHub Actions용)
+    if sys.argv[1] == "catalog":
+        build_catalogs(int(sys.argv[2]), sys.argv[3])
+        return
     if sys.argv[1] == "auto":
         dst = sys.argv[2]
         from datetime import datetime, timedelta, timezone
