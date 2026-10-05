@@ -1,5 +1,5 @@
 {
-  "version": 23,
+  "version": 24,
   "chatModel": "gemini-3.5-flash-lite",
   "dailyLimit": 30,
   "items": [

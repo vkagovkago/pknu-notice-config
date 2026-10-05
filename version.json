@@ -1,7 +1,7 @@
 {
-  "versionCode": 205,
-  "versionName": "1.7.0",
+  "versionCode": 206,
+  "versionName": "1.7.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "HelloLMS 알림에서 과제·시험을 자동으로 담기(시간표 > 시험·과제에서 켜기). 1.6.x(입학연도·전공으로 졸업 요건 자동 계산) 포함. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "AI 챗봇 무료 사용량 문제 수정(모델 자동 전환), HelloLMS 알림에서 과제·시험 자동으로 담기. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
