@@ -60,7 +60,10 @@ jobs:
           E=$(python -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$F")
           # 같은 버전이면 지난 배포본에서 가져온다 — 30분마다 릴리스에서 받으면 다운로드 수가 부풀려진다
           curl -sfL "https://vkagovkago.github.io/pknu-notice-config/apk/$E" -o "site/apk/$F"             || curl -sfL https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk -o "site/apk/$F"
-          printf '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="0;url=../apk/%s"><title>부경대 공지알리미 받기</title><p style="font:16px sans-serif;padding:24px">다운로드가 시작되지 않으면 <a href="../apk/%s">%s</a>를 눌러 주세요.</p>' "$E" "$E" "$F" > site/download/index.html
+          # 페이지가 휴대폰 브라우저에 10분까지 남아 예전 버전으로 보내는 일이 있어, 열 때마다 latest.txt를 새로 읽어 그 파일로 보낸다
+          # (못 읽으면 3초 뒤 이 페이지를 만들 때의 버전으로).
+          printf '%s' "$E" > site/apk/latest.txt
+          printf '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="3;url=../apk/%s"><title>부경대 공지알리미 받기</title><p style="font:16px sans-serif;padding:24px">다운로드가 시작되지 않으면 <a id="a" href="../apk/%s">%s</a>를 눌러 주세요.</p><script>fetch("../apk/latest.txt?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.text():""}).then(function(f){f=f.trim();if(f){document.getElementById("a").href="../apk/"+f;document.getElementById("a").textContent=decodeURIComponent(f);location.replace("../apk/"+f)}})</script>' "$E" "$E" "$F" > site/download/index.html
       - run: python tools/build_web_data.py site/data
       - name: 새 공지 푸시
         env:
