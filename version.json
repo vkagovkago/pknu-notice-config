@@ -1,7 +1,7 @@
 {
-  "versionCode": 215,
-  "versionName": "1.9.6",
+  "versionCode": 216,
+  "versionName": "1.10.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "자료실 문서는 앱 안에서 열리고, 바깥 열기 버튼은 학교 홈페이지로 가요. 학과 선택을 단과대학별로 접어 보여줘요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "자료실에 지난 교육과정(2021~2025학년도)을 더했어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
