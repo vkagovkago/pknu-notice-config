@@ -1,7 +1,7 @@
 // 오프라인에서도 열리게 화면 파일을 담아두고, 자료(data/)는 네트워크 우선(실패하면 담아둔 것).
 // 새 공지 알림(FCM 웹 푸시)도 여기서 받는다.
-const CACHE = "pknu-web-v1";
-const SHELL = ["./", "index.html", "style.css", "app.js", "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png"];
+const CACHE = "pknu-web-v2";
+const SHELL = ["./", "index.html", "style.css", "app.js", "study.js", "campus.js", "firebase-config.js", "manifest.webmanifest", "icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

@@ -8,7 +8,7 @@ const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
 const DAY_KEYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 const PALETTE = ["#5B8DEF", "#2BB673", "#EF8354", "#B15BEF", "#EF5B5B", "#34B3C2", "#C7A15B", "#7A8899"];
 const FIREBASE_JS = "12.19.0"; // https://www.gstatic.com/firebasejs/<버전>/...
-const ANDROID_APK = "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk";
+const ANDROID_APK = "https://vkagovkago.github.io/pknu-notice-config/download/";
 
 // ---------- 저장 ----------
 const store = {
@@ -20,7 +20,8 @@ const store = {
 const data = {};
 async function load(name, force) {
   if (data[name] && !force) return data[name];
-  const r = await fetch(`data/${name}.json`, { cache: force ? "reload" : "no-cache" });
+  // static/은 앱 assets에서 옮겨 온 고정 자료, 나머지는 Actions가 모은 자료
+  const r = await fetch(name.startsWith("static/") ? `${name}.json` : `data/${name}.json`, { cache: force ? "reload" : "no-cache" });
   if (!r.ok) throw new Error(name);
   return (data[name] = await r.json());
 }
@@ -49,6 +50,15 @@ function termLabel(k) {
   const [y, t] = k.split("-");
   return `${y}년 ${{ 1: "1학기", 2: "2학기", S: "여름 계절학기", W: "겨울 계절학기" }[t]}`;
 }
+// 학기 순서: 1학기 < 여름 < 2학기 < 겨울 (앱 Season 순서)
+const SEASONS = "1S2W";
+const termOrder = (k) => { const [y, t] = k.split("-"); return +y * 10 + SEASONS.indexOf(t); };
+function termShift(k, n) {
+  let [y, t] = k.split("-"), i = SEASONS.indexOf(t) + n;
+  y = +y + Math.floor(i / 4); i = ((i % 4) + 4) % 4;
+  return `${y}-${SEASONS[i]}`;
+}
+let viewTerm = termKey(); // 시간표 화면에서 보고 있는 학기
 
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function toast(msg) {
@@ -64,17 +74,77 @@ function noticesOf(ids) {
   return ids.flatMap((id) => (boards[id]?.items || []).map((n) => ({ ...n, board: boards[id].name, boardId: id })));
 }
 const byNewest = (a, b) => (b.date || "").localeCompare(a.date || "") || b.no - a.no;
+const bmKey = (n) => `${n.boardId}|${n.no}`;
+const bookmarks = () => store.get("bookmarks", {}); // 키 → 공지(목록에서 빠져도 남게 통째로)
+let readCache;
+const readSet = () => (readCache ||= new Set(store.get("read", [])));
+function markRead(k) {
+  if (readSet().has(k)) return;
+  readSet().add(k); store.set("read", [...readSet()].slice(-3000));
+}
+const keywords = () => store.get("keywords", []);
+const hasKeyword = (t) => keywords().some((k) => k && t.includes(k));
+function highlight(title) {
+  let t = esc(title);
+  keywords().forEach((k) => { if (k) t = t.split(esc(k)).join(`<mark>${esc(k)}</mark>`); });
+  return t;
+}
+const shown = {}; // 화면에 그린 공지(북마크할 때 통째로 저장하려고)
 function noticeRow(n, showBoard = true) {
+  const k = bmKey(n), bm = !!bookmarks()[k];
+  shown[k] = n;
   const pin = n.pinned ? '<span class="badge">고정</span> ' : "";
-  return `<a class="row" href="${esc(n.url)}" target="_blank" rel="noopener">
-    <div class="grow"><div class="t">${pin}${esc(n.title)}</div>
-    <div class="sub">${showBoard ? esc(n.board) + " · " : ""}${esc(n.date)}</div></div></a>`;
+  const dl = deadlineBadge(deadlineOf(n.title, n.date || ""));
+  return `<div class="row nrow ${readSet().has(k) ? "read" : ""}"><a class="grow" href="${esc(n.url)}" target="_blank" rel="noopener" data-read="${esc(k)}">
+    <div class="t">${pin}${dl}${highlight(n.title)}</div>
+    <div class="sub">${showBoard ? esc(n.board) + " · " : ""}${esc(n.date)}</div></a>
+    <button class="star ${bm ? "on" : ""}" data-bm="${esc(k)}" aria-label="${bm ? "담기 취소" : "담기"}">${bm ? "★" : "☆"}</button></div>`;
+}
+function toggleBookmark(k, btn) {
+  const all = bookmarks();
+  if (all[k]) delete all[k]; else if (shown[k]) all[k] = shown[k]; else return;
+  store.set("bookmarks", all);
+  btn.classList.toggle("on", !!all[k]); btn.textContent = all[k] ? "★" : "☆";
+  toast(all[k] ? "공지를 담았어요 (공지 > ★ 담은 공지)" : "담기를 취소했어요");
+}
+
+// 제목에 적힌 마감일("…신청 안내(~9/20)"). 앱 NoticeDeadline.find와 같은 규칙인데, 웹은 본문을 못 읽어 제목만 본다.
+const DL_WORDS = ["마감", "까지", "~", "신청기간", "신청 기간", "접수기간", "접수 기간", "모집기간", "모집 기간", "기한", "제출기한", "신청기한"];
+const FULL_DATE = /(20\d{2})\s*[.\-년/]\s*(\d{1,2})\s*[.\-월/]\s*(\d{1,2})/g;
+const SHORT_DATE = /(^|\D)(\d{1,2})\s*[.\-월/]\s*(\d{1,2})\s*(?:일)?(?!\d)/g; // 뒤돌아보기 대신 앞 글자를 잡는다(옛 사파리)
+const shiftKey = (k, n) => { const d = fromKey(k); d.setDate(d.getDate() + n); return keyOf(d); };
+function datesIn(chunk, year) {
+  const key = (y, m, d) => (m >= 1 && m <= 12 && d >= 1 && d <= 31 ? `${y}${pad(m)}${pad(d)}` : null);
+  const out = [];
+  for (const m of chunk.matchAll(FULL_DATE)) { const k = key(+m[1], +m[2], +m[3]); if (k) out.push(k); }
+  for (const m of chunk.replace(FULL_DATE, " ").matchAll(SHORT_DATE)) { const k = key(year, +m[2], +m[3]); if (k) out.push(k); }
+  return out;
+}
+function deadlineOf(text, noticeDate) {
+  const nd = noticeDate.replace(/-/g, "");
+  if (!text || nd.length !== 8) return null;
+  const floor = shiftKey(nd, -7), ceil = shiftKey(nd, 400), wins = [];
+  for (const w of DL_WORDS) {
+    for (let at = text.indexOf(w); at >= 0; at = text.indexOf(w, at + 1)) {
+      const ds = datesIn(text.slice(Math.max(0, at - 40), at + w.length + 40), +nd.slice(0, 4)).filter((d) => d >= floor && d <= ceil).sort();
+      if (ds.length) wins.push(ds[ds.length - 1]);
+    }
+  }
+  if (!wins.length) return null;
+  const tk = todayKey(), fut = wins.filter((d) => d >= tk).sort();
+  return fut[0] || wins.sort()[wins.length - 1];
+}
+function deadlineBadge(d) {
+  if (!d) return "";
+  const left = daysBetween(todayKey(), d);
+  if (left < 0 || left > 30) return "";
+  return `<span class="badge red">${left === 0 ? "오늘 마감" : left === 1 ? "내일 마감" : "D-" + left}</span> `;
 }
 
 // ---------- 시간표 ----------
 const myClasses = () => store.get("timetable", []);
 const saveClasses = (list) => store.set("timetable", list);
-const termClasses = () => myClasses().filter((c) => (c.term || termKey()) === termKey());
+const termClasses = (term = termKey()) => myClasses().filter((c) => (c.term || termKey()) === term);
 
 // ---------- 셔틀 ----------
 function shuttleTable(month = new Date().getMonth() + 1) {
@@ -131,28 +201,48 @@ routes.home = {
     const events = upcomingEvents().slice(0, 4);
     const notices = noticesOf(myBoards()).filter((n) => !n.pinned).sort(byNewest).slice(0, 6);
     const exam = examLine();
+    const soon = upcomingTasks(7).slice(0, 3);
+    const reg = courseRegEvent();
+    const hidden = new Set(store.get("homeHidden", []));
+    const show = (id, html) => (hidden.has(id) ? "" : html);
 
     return `
+      ${!window.FIREBASE_CONFIG ? "" : show("chat", '<a class="card banner" href="#chat">🤖 <b>AI 챗봇</b>에게 학교생활 물어보기 ›</a>')}
       <section class="card"><h2>오늘 · ${now.getMonth() + 1}월 ${now.getDate()}일 (${DAYS[di]})</h2>
         <div class="row"><span>🗓️</span><div class="grow">${cls}</div></div>
         <a class="row" href="#shuttle" style="color:inherit"><span>🚌</span><div class="grow">${bus}</div></a>
         ${exam ? `<a class="row" href="#schedule" style="color:inherit"><span>📝</span><div class="grow">${exam}</div></a>` : ""}
+        ${soon.map((t) => `<a class="row" href="#tasks" style="color:inherit"><span>📌</span><div class="grow">${esc(t.course)} ${esc(t.kind)}${t.title ? " · " + esc(t.title) : ""} <span class="badge red">${taskBadge(t)}</span></div></a>`).join("")}
       </section>
-      <section class="card"><h2>오늘 학식 <a class="more" href="#menu">주간 보기 ›</a></h2>
+      ${reg ? show("reg", `<section class="card"><h2>📋 ${esc(courseRegShort(reg))}</h2>${eventRow(reg)}
+        <div class="btns"><button class="btn ghost" id="regics">내 차례 알람을 캘린더에 넣기</button></div>
+        <p class="note">학년별 시작 시각은 학사공지·강의편람에서 확인해 주세요.</p></section>`) : ""}
+      ${hidden.has("menu") ? "" : `<section class="card"><h2>오늘 학식 <a class="more" href="#menu">주간 보기 ›</a></h2>
         ${meals.length ? meals.map((c) => `<div class="row"><div class="grow"><b>${esc(c.name)}</b>
           ${c.meals.map((m) => `<div class="sub">${esc(m.name)}: ${esc(m.dishes.slice(0, 4).join(", "))}${m.dishes.length > 4 ? " …" : ""}</div>`).join("")}</div></div>`).join("")
           : '<div class="empty">오늘 올라온 식단이 없어요</div>'}
-      </section>
-      <section class="card"><h2>다가오는 학사일정 <a class="more" href="#schedule">전체 ›</a></h2>
+      </section>`}
+      ${show("schedule", `<section class="card"><h2>다가오는 학사일정 <a class="more" href="#schedule">전체 ›</a></h2>
         ${events.map(eventRow).join("") || '<div class="empty">다가오는 일정이 없어요</div>'}
-      </section>
-      <section class="card list"><h2>최근 공지 <a class="more" href="#notices">전체 ›</a></h2>
+      </section>`)}
+      ${show("notices", `<section class="card list"><h2>최근 공지 <a class="more" href="#notices">전체 ›</a></h2>
         ${notices.map((n) => noticeRow(n)).join("") || '<div class="empty">공지가 없어요</div>'}
         <p class="note">자료 기준 ${esc((data.notices?.updated || "").replace("T", " ").slice(0, 16))} · 30분마다 갱신</p>
-      </section>
+      </section>`)}
       ${installCard()}`;
   },
+  after() {
+    $("#regics") && ($("#regics").onclick = () => courseRegAlarm(courseRegEvent()));
+  },
 };
+
+// 수강신청 알리미(앱 CourseReg): 학사일정 제목에 이 말이 든 것 중 끝나지 않은 가장 이른 일정
+const REG_WORDS = ["수강신청", "수강변경", "수강취소", "현금등록"];
+const courseRegShort = (e) => REG_WORDS.find((w) => e.title.replace(/\s/g, "").includes(w)) || "수강신청";
+function courseRegEvent() {
+  const tk = todayKey();
+  return (data.schedule?.events || []).filter((e) => REG_WORDS.some((w) => e.title.replace(/\s/g, "").includes(w)) && tk <= (e.end || e.start))[0];
+}
 
 function upcomingEvents() {
   const tk = todayKey();
@@ -161,7 +251,7 @@ function upcomingEvents() {
 function eventRow(e) {
   const tk = todayKey();
   const left = daysBetween(tk, e.start);
-  const badge = e.start <= tk ? '<span class="badge green">진행중</span>' : `<span class="badge">D-${left}</span>`;
+  const badge = (e.end || e.start) < tk ? '<span class="badge">끝남</span>' : e.start <= tk ? '<span class="badge green">진행중</span>' : `<span class="badge">D-${left}</span>`;
   const range = e.end && e.end !== e.start ? `${md(e.start)} ~ ${md(e.end)}` : md(e.start);
   return `<div class="row">${badge}<div class="grow"><div class="t">${esc(e.title)}</div><div class="sub">${range}</div></div></div>`;
 }
@@ -198,8 +288,11 @@ routes.notices = {
       <input type="search" id="q" placeholder="공지 검색 (내 게시판 전체)" value="${esc(store.get("noticeQuery", ""))}">
       <div class="chips">
         <button class="chip ${sel === "all" ? "on" : ""}" data-f="all">전체</button>
+        <button class="chip ${sel === "bm" ? "on" : ""}" data-f="bm">★ 담은 공지</button>
+        ${keywords().length ? `<button class="chip ${sel === "kw" ? "on" : ""}" data-f="kw">🔑 키워드</button>` : ""}
         ${ids.map((id) => `<button class="chip ${sel === id ? "on" : ""}" data-f="${esc(id)}">${esc(boards[id]?.name || id)}</button>`).join("")}
         <a class="chip" href="#boards">＋ 게시판</a>
+        <a class="chip" href="#keywords">키워드 설정</a>
       </div>
       <section class="card list" id="nlist"></section>`;
   },
@@ -207,13 +300,16 @@ routes.notices = {
     const draw = () => {
       const sel = store.get("noticeFilter", "all");
       const q = $("#q").value.trim().replace(/\s+/g, "").toLowerCase();
-      const ids = sel === "all" ? myBoards() : [sel];
+      const ids = sel === "all" || sel === "kw" ? myBoards() : sel === "bm" ? [] : [sel];
       const errs = ids.map((id) => data.notices?.boards?.[id]).filter((b) => b?.error && !(b.items || []).length);
-      let list = noticesOf(ids);
+      let list = sel === "bm" ? Object.values(bookmarks()) : noticesOf(ids);
+      if (sel === "kw") list = list.filter((n) => hasKeyword(n.title));
       if (q) list = list.filter((n) => n.title.replace(/\s+/g, "").toLowerCase().includes(q));
-      list.sort((a, b) => (sel !== "all" && (b.pinned - a.pinned)) || byNewest(a, b));
+      const multi = sel === "all" || sel === "bm" || sel === "kw";
+      list.sort((a, b) => (!multi && (b.pinned - a.pinned)) || byNewest(a, b));
       $("#nlist").innerHTML = (errs.length ? `<p class="note">⚠ ${errs.map((b) => esc(b.name)).join(", ")}: 지금은 목록을 받지 못했어요</p>` : "")
-        + (list.slice(0, 150).map((n) => noticeRow(n, sel === "all")).join("") || '<div class="empty">공지가 없어요</div>');
+        + (list.slice(0, 150).map((n) => noticeRow(n, multi)).join("")
+          || `<div class="empty">${sel === "bm" ? "공지 옆 ☆를 누르면 여기 모여요" : "공지가 없어요"}</div>`);
     };
     $("#q").addEventListener("input", () => { store.set("noticeQuery", $("#q").value); draw(); });
     view.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => {
@@ -255,6 +351,25 @@ routes.boards = {
   },
 };
 
+routes.keywords = {
+  title: "키워드", sub: true, tab: "notices",
+  html() {
+    return `<section class="card"><h2>관심 키워드</h2>
+      <p class="sub">제목에 이 말이 들어간 공지를 노랗게 표시하고, 공지 탭의 🔑 키워드 칩에 모아요. (예: 장학, 근로, 수강신청)</p>
+      <form class="chatbar" id="kf" style="position:static"><input type="text" id="ki" placeholder="키워드 입력" autocomplete="off"><button class="btn">추가</button></form>
+      <div class="chips" style="flex-wrap:wrap">${keywords().map((k, i) => `<button class="chip on" data-k="${i}">${esc(k)} ✕</button>`).join("") || '<span class="sub">아직 없어요</span>'}</div></section>`;
+  },
+  after() {
+    $("#kf").onsubmit = (e) => {
+      e.preventDefault();
+      const k = $("#ki").value.trim();
+      if (k && !keywords().includes(k)) store.set("keywords", [...keywords(), k].slice(0, 30));
+      render();
+    };
+    view.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { store.set("keywords", keywords().filter((_, i) => i !== +b.dataset.k)); render(); }));
+  },
+};
+
 // ----- 학식 -----
 routes.menu = {
   title: "학식",
@@ -276,77 +391,156 @@ routes.menu = {
 };
 
 // ----- 시간표 -----
+const range = (n) => [...Array(n).keys()];
+// 시간표 격자. 마법사 미리보기에서도 쓴다(clickable=false면 칸을 눌러도 아무 일 없음)
+function gridHtml(list, clickable = true) {
+  const grid = list.filter((c) => !c.online);
+  if (!grid.length) return "";
+  const maxDay = Math.max(4, ...grid.map((c) => c.day));
+  const startH = Math.min(9, ...grid.map((c) => Math.floor(c.start / 60)));
+  const endH = Math.max(18, ...grid.map((c) => Math.ceil(c.end / 60)));
+  const H = 48, ti = clickable && viewTerm === termKey() ? dayIndex() : -1, m = nowMinute();
+  const nowTop = m >= startH * 60 && m < endH * 60 ? ((m - startH * 60) / 60) * H : null;
+  const cols = range(maxDay + 1).map((d) => `<div class="col ${d === ti ? "today" : ""}" style="grid-row:2;height:${(endH - startH) * H}px">
+    ${d === ti && nowTop != null ? `<div class="now" style="top:${nowTop}px"></div>` : ""}
+    ${grid.filter((c) => c.day === d).map((c) => `<div class="blk" ${clickable ? `data-id="${esc(c.id)}"` : ""} style="top:${((c.start - startH * 60) / 60) * H}px;height:${((c.end - c.start) / 60) * H - 2}px;background:${PALETTE[(c.color || 0) % PALETTE.length]}55">
+      <b>${esc(c.name)}</b><small>${esc(c.room || "")}</small></div>`).join("")}</div>`).join("");
+  return `<div class="tt" style="--days:${maxDay + 1}">
+    <div class="hd"></div>${range(maxDay + 1).map((d) => `<div class="hd ${d === ti ? "today" : ""}">${DAYS[d]}</div>`).join("")}
+    <div class="hours" style="grid-row:2">${range(endH - startH).map((h) => `<div>${startH + h}</div>`).join("")}</div>${cols}</div>`;
+}
+
+// 같은 요일에 시간이 겹치는 서로 다른 과목 쌍(앱 TimetableConflicts)
+function clashes(list) {
+  const real = list.filter((c) => !c.online), out = [], course = (c) => c.courseKey || c.name;
+  for (let i = 0; i < real.length; i++) for (let j = i + 1; j < real.length; j++) {
+    const a = real[i], b = real[j];
+    if (a.day === b.day && course(a) !== course(b) && a.start < b.end && b.start < a.end) out.push(a.start <= b.start ? [a, b] : [b, a]);
+  }
+  return out.sort((x, y) => x[0].day - y[0].day || x[0].start - y[0].start);
+}
+
 routes.timetable = {
   title: "시간표",
   html() {
-    const list = termClasses(), grid = list.filter((c) => !c.online), online = list.filter((c) => c.online);
-    const maxDay = Math.max(4, ...grid.map((c) => c.day));
-    const startH = Math.min(9, ...grid.map((c) => Math.floor(c.start / 60)));
-    const endH = Math.max(18, ...grid.map((c) => Math.ceil(c.end / 60)));
-    const ti = dayIndex(), H = 48;
-    const cols = [...Array(maxDay + 1).keys()].map((d) => `<div class="col ${d === ti ? "today" : ""}" style="grid-row:2;height:${(endH - startH) * H}px">
-      ${grid.filter((c) => c.day === d).map((c) => `<div class="blk" data-id="${c.id}" style="top:${(c.start - startH * 60) / 60 * H}px;height:${(c.end - c.start) / 60 * H - 2}px;background:${PALETTE[c.color % PALETTE.length]}55">
-        <b>${esc(c.name)}</b><small>${esc(c.room)}</small></div>`).join("")}</div>`).join("");
-    return `<p class="sub">${termLabel(termKey())}</p>
-      ${grid.length ? `<div class="tt" style="--days:${maxDay + 1}">
-        <div class="hd"></div>${[...Array(maxDay + 1).keys()].map((d) => `<div class="hd ${d === ti ? "today" : ""}">${DAYS[d]}</div>`).join("")}
-        <div class="hours" style="grid-row:2">${[...Array(endH - startH).keys()].map((h) => `<div>${startH + h}</div>`).join("")}</div>${cols}
-      </div>` : '<section class="card"><div class="empty">아직 수업이 없어요. 아래에서 추가하거나 안드로이드 앱 백업을 가져오세요.</div></section>'}
-      ${online.length ? `<section class="card" style="margin-top:14px"><h2>시간 없는 수업 (원격 등)</h2>${online.map((c) => `<div class="row" data-id="${c.id}"><div class="grow">${esc(c.name)}</div></div>`).join("")}</section>` : ""}
-      <div class="btns" style="margin-top:14px">
-        <button class="btn" id="add">＋ 수업 추가</button>
+    const list = termClasses(viewTerm), online = list.filter((c) => c.online), cl = clashes(list);
+    const tasks = termTasks(viewTerm).filter((t) => !t.done);
+    return `<div class="termnav"><button class="chip" id="tprev" aria-label="이전 학기">‹</button><b>${termLabel(viewTerm)}</b>
+        <button class="chip" id="tnext" aria-label="다음 학기">›</button>${viewTerm !== termKey() ? '<button class="chip" id="tnow">이번 학기로</button>' : ""}</div>
+      ${cl.length ? `<section class="card"><h2>⚠ 시간이 겹쳐요</h2>${cl.map(([a, b]) => `<div class="sub">${DAYS[a.day]} ${hm(Math.max(a.start, b.start))} ${esc(a.name)} ↔ ${esc(b.name)}</div>`).join("")}</section>` : ""}
+      ${gridHtml(list) || '<section class="card"><div class="empty">아직 수업이 없어요. 과목을 검색해서 담거나 직접 추가해 보세요.</div></section>'}
+      ${online.length ? `<section class="card" style="margin-top:14px"><h2>시간 없는 수업 (원격·사전제작 등)</h2>${online.map((c) => `<div class="row" data-id="${esc(c.id)}"><div class="grow">${esc(c.name)}${c.note ? `<div class="sub">${esc(c.note)}</div>` : ""}</div></div>`).join("")}</section>` : ""}
+      <section class="card" style="margin-top:14px"><h2>시험·과제 <a class="more" href="#tasks">전체 ›</a></h2>
+        ${tasks.slice(0, 5).map(taskRow).join("") || '<div class="empty">적어 둔 시험·과제가 없어요</div>'}</section>
+      <div class="btns">
+        <a class="btn" href="#search">🔍 과목 검색해서 담기</a>
+        <a class="btn ghost" href="#wizard">🪄 시간표 마법사</a>
+        <button class="btn ghost" id="add">＋ 직접 추가</button>
+        <a class="btn ghost" href="#credits">🎓 학점·졸업 요건</a>
         <label class="btn ghost">안드로이드 백업 가져오기<input type="file" id="imp" accept=".json,application/json" hidden></label>
       </div>
-      <p class="note">시간표는 이 휴대폰 브라우저에만 저장돼요. 칸을 누르면 고치거나 지울 수 있어요.</p>`;
+      <p class="note">시간표는 이 휴대폰 브라우저에만 저장돼요. 칸을 누르면 고치기·결석·길찾기를 할 수 있어요.</p>`;
   },
   after() {
+    $("#tprev").onclick = () => { viewTerm = termShift(viewTerm, -1); render(); };
+    $("#tnext").onclick = () => { viewTerm = termShift(viewTerm, 1); render(); };
+    $("#tnow") && ($("#tnow").onclick = () => { viewTerm = termKey(); render(); });
     $("#add").onclick = () => classDialog();
     view.querySelectorAll("[data-id]").forEach((el) => el.addEventListener("click", () => classDialog(myClasses().find((c) => c.id === el.dataset.id))));
+    bindTaskRows();
     $("#imp").onchange = async (e) => {
-      try {
-        const n = importAndroidBackup(await e.target.files[0].text());
-        toast(`수업 ${n}개를 가져왔어요`); render();
-      } catch (err) { toast("가져오지 못했어요: 앱의 설정 백업 파일인지 확인해 주세요"); }
+      try { toast(importAndroidBackup(await e.target.files[0].text())); render(); }
+      catch (err) { console.warn(err); toast("가져오지 못했어요: 앱의 설정 백업 파일인지 확인해 주세요"); }
     };
   },
 };
 
+// 결석 기록. 학칙상 2/3 이상 출석해야 학점 — 15주 × 주당 수업 칸 수로 어림한다(앱 Attendance)
+const absKey = (c) => `${c.term}|${c.courseKey || c.name}`;
+function absenceHtml(c) {
+  const n = store.get("attendance", {})[absKey(c)] || 0;
+  const weekly = Math.max(1, termClasses(c.term).filter((x) => !x.online && (x.courseKey || x.name) === (c.courseKey || c.name)).length);
+  const limit = Math.floor((weekly * 15) / 3), left = limit - n;
+  const msg = left < 0 ? "1/3을 넘었어요 — 학점을 받을 수 없어요" : left <= 1 ? `${left}회 더 빠지면 위험해요` : `${left}회까지 괜찮아요`;
+  return `<label>결석</label><div class="btns" style="align-items:center"><button class="btn ghost" data-abs="-1">−</button><b>${n}회</b>
+    <button class="btn ghost" data-abs="1">＋</button><span class="sub" ${left <= 1 ? 'style="color:var(--red)"' : ""}>${msg}</span></div>
+    <p class="note">15주 × 주 ${weekly}회 = ${weekly * 15}회로 어림해 ${limit}회까지 봐요. 지각·공결 처리는 과목마다 다르니 강의계획서를 확인하세요.</p>`;
+}
+
 function classDialog(c) {
   const d = document.createElement("div");
   d.className = "dialog";
-  d.innerHTML = `<div><h3>${c ? "수업 고치기" : "수업 추가"}</h3>
-    <label for="cn">과목 이름</label><input type="text" id="cn" value="${esc(c?.name || "")}">
-    <label for="cd">요일</label><select id="cd">${DAYS.map((x, i) => `<option value="${i}" ${(c ? c.day : 0) === i ? "selected" : ""}>${x}요일</option>`).join("")}</select>
+  const timeFields = c?.online ? "" : `<label for="cd">요일</label><select id="cd">${DAYS.map((x, i) => `<option value="${i}" ${(c ? c.day : 0) === i ? "selected" : ""}>${x}요일</option>`).join("")}</select>
     <div class="grid2"><div><label for="cs">시작</label><input type="time" id="cs" value="${hm(c?.start ?? 540)}"></div>
     <div><label for="ce">끝</label><input type="time" id="ce" value="${hm(c?.end ?? 615)}"></div></div>
-    <label for="cr">강의실</label><input type="text" id="cr" value="${esc(c?.room || "")}">
-    <div class="btns"><button class="btn" id="ok">저장</button>${c ? '<button class="btn danger" id="del">삭제</button>' : ""}<button class="btn ghost" id="no">취소</button></div></div>`;
+    <label for="cr">강의실</label><input type="text" id="cr" value="${esc(c?.room || "")}" placeholder="예: C25-224">`;
+  d.innerHTML = `<div><h3>${c ? "수업 고치기" : "수업 추가"}</h3>
+    <label for="cn">과목 이름</label><input type="text" id="cn" value="${esc(c?.name || "")}">
+    ${c?.note ? `<p class="sub">${esc(c.note)}</p>` : ""}${timeFields}
+    ${c?.room ? `<div class="btns" style="margin-bottom:10px">${roomLinks(c.room)}</div>` : ""}
+    ${c ? `<div id="abs">${absenceHtml(c)}</div><p><a href="#tasks/${encodeURIComponent(c.name)}" id="ctask">＋ 이 과목 시험·과제 적기</a></p>` : ""}
+    <div class="btns"><button class="btn" id="ok">저장</button>${c ? `<button class="btn danger" id="del">${c.courseKey ? "과목 빼기" : "삭제"}</button>` : ""}<button class="btn ghost" id="no">취소</button></div></div>`;
   document.body.append(d);
-  d.addEventListener("click", (e) => { if (e.target === d) d.remove(); });
+  d.addEventListener("click", (e) => {
+    if (e.target === d || e.target.id === "ctask") return d.remove();
+    const b = e.target.closest("[data-abs]");
+    if (!b) return;
+    const all = store.get("attendance", {});
+    all[absKey(c)] = Math.max(0, (all[absKey(c)] || 0) + +b.dataset.abs);
+    store.set("attendance", all);
+    $("#abs", d).innerHTML = absenceHtml(c);
+  });
   $("#no", d).onclick = () => d.remove();
-  if (c) $("#del", d).onclick = () => { saveClasses(myClasses().filter((x) => x.id !== c.id)); d.remove(); render(); };
+  // 검색해서 담은 과목은 요일마다 칸이 따로라, 지울 땐 같은 과목 칸을 한꺼번에 뺀다
+  if (c) $("#del", d).onclick = () => { saveClasses(myClasses().filter((x) => x.id !== c.id && !(c.courseKey && x.courseKey === c.courseKey))); d.remove(); render(); };
   $("#ok", d).onclick = () => {
-    const name = $("#cn", d).value.trim(), start = toMin($("#cs", d).value), end = toMin($("#ce", d).value);
+    const name = $("#cn", d).value.trim();
+    if (c?.online) {
+      if (!name) return toast("이름을 적어 주세요");
+      saveClasses(myClasses().map((x) => (x.id === c.id ? { ...x, name } : x))); d.remove(); return render();
+    }
+    const start = toMin($("#cs", d).value), end = toMin($("#ce", d).value);
     if (!name || !(end > start)) return toast("이름과 시간을 확인해 주세요");
     const list = myClasses().filter((x) => x.id !== c?.id);
-    const used = new Set(list.map((x) => x.color % PALETTE.length));
-    const color = c?.color ?? [...PALETTE.keys()].find((i) => !used.has(i)) ?? list.length;
-    list.push({ id: c?.id || String(Date.now()), name, day: +$("#cd", d).value, start, end, room: $("#cr", d).value.trim(), color, term: c?.term || termKey(), online: false });
+    const color = c?.color ?? freeColor(list);
+    list.push({ ...c, id: c?.id || String(Date.now()), name, day: +$("#cd", d).value, start, end, room: $("#cr", d).value.trim(), color, term: c?.term || viewTerm, online: false });
     saveClasses(list); d.remove(); render();
   };
 }
+function freeColor(list) {
+  const used = new Set(list.map((x) => (x.color || 0) % PALETTE.length));
+  return [...PALETTE.keys()].find((i) => !used.has(i)) ?? list.length;
+}
 
-// 안드로이드 앱의 설정 백업(JSON)에서 시간표만 가져온다. 항목 구분 0x1E, 칸 구분 0x1F (TimetablePrefs와 같은 형식)
+// 안드로이드 앱의 설정 백업(JSON)을 가져온다. 항목 구분 0x1E, 칸 구분 0x1F (앱 *Prefs.raw와 같은 형식)
 function importAndroidBackup(text) {
-  const raw = JSON.parse(text).timetableEntries;
-  if (typeof raw !== "string") throw new Error("no timetable");
-  const items = raw.split("\u001e").map((line) => line.split("\u001f")).filter((f) => f.length >= 7).map((f) => ({
-    id: f[0], name: f[1], day: DAY_KEYS.indexOf(f[2]), start: +f[3], end: +f[4], room: f[5], color: +f[6] || 0,
-    online: f[8] === "1", term: f[9] || termKey(),
-  })).filter((c) => c.day >= 0 && c.name);
-  const ids = new Set(items.map((c) => c.id));
-  saveClasses([...myClasses().filter((c) => !ids.has(c.id)), ...items]);
-  return items.filter((c) => c.term === termKey()).length;
+  const j = JSON.parse(text), done = [];
+  const rows = (raw, n) => (typeof raw === "string" && raw ? raw.split("\u001e").map((l) => l.split("\u001f")).filter((f) => f.length >= n) : []);
+  if (typeof j.timetableEntries === "string") {
+    const items = rows(j.timetableEntries, 7).map((f) => ({
+      id: f[0], name: f[1], day: DAY_KEYS.indexOf(f[2]), start: +f[3], end: +f[4], room: f[5], color: +f[6] || 0,
+      courseKey: f[7] || "", online: f[8] === "1", term: f[9] || termKey(),
+    })).filter((c) => c.day >= 0 && c.name);
+    const ids = new Set(items.map((c) => c.id));
+    saveClasses([...myClasses().filter((c) => !ids.has(c.id)), ...items]);
+    done.push(`수업 ${items.length}칸`);
+  }
+  if (Array.isArray(j.selectedBoardIds)) {
+    const known = data.notices?.boards || {};
+    const ids = j.selectedBoardIds.filter((id) => known[id]);
+    if (ids.length) { store.set("boards", ids); done.push(`게시판 ${ids.length}곳`); }
+  }
+  if (Array.isArray(j.includeKeywords) && j.includeKeywords.length) { store.set("keywords", j.includeKeywords.slice(0, 30)); done.push("키워드"); }
+  const tasks = rows(j.courseTasks, 7).map((f) => ({ id: f[0], term: f[1], course: f[2], kind: f[3], title: f[4], date: f[5], done: f[6] === "1" }));
+  if (tasks.length) { store.set("tasks", tasks); done.push(`시험·과제 ${tasks.length}개`); }
+  if (typeof j.attendance === "string" && j.attendance) {
+    const att = {};
+    j.attendance.split("\n").forEach((l) => { const i = l.lastIndexOf("="); if (i > 0 && !isNaN(+l.slice(i + 1))) att[l.slice(0, i)] = +l.slice(i + 1); });
+    store.set("attendance", att); done.push("결석 기록");
+  }
+  if (typeof j.credits === "string" && j.credits) { importCredits(j.credits); done.push("학점·프로필"); }
+  if (!done.length) throw new Error("빈 백업");
+  return `가져왔어요: ${done.join(", ")}`;
 }
 
 // ----- 더보기 -----
@@ -354,31 +548,36 @@ routes.more = {
   title: "더보기",
   html() {
     const item = (href, icon, name, sub) => `<a class="row" href="${href}" style="color:inherit"><span>${icon}</span><div class="grow"><div>${name}</div><div class="sub">${sub}</div></div><span class="sub">›</span></a>`;
-    return `<section class="card">
+    return `<section class="card"><h2>학교생활</h2>
       ${item("#chat", "🤖", "AI 챗봇", "학교생활·앱 사용법 물어보기")}
       ${item("#faq", "❓", "자주 묻는 질문", "휴학·수강신청·장학금 등")}
-      ${item("#schedule", "📅", "학사일정", "이번 학기 전체 일정")}
+      ${item("#schedule", "📅", "학사일정", "목록·달력, 캘린더 앱에 넣기")}
       ${item("#shuttle", "🚌", "셔틀버스", "대연 ↔ 용당 시간표")}
+      ${item("#rooms", "🚪", "빈 강의실", "지금 비어 있는 강의실 찾기")}
+      ${item("#library", "📚", "도서관", "열람실 남은 좌석·자료 검색")}
+      ${item("#map", "🗺️", "캠퍼스 지도", "건물 찾기·길찾기")}
+      </section>
+      <section class="card"><h2>수업·학점</h2>
+      ${item("#search", "🔍", "과목 검색", "이번 학기 개설 과목 찾아 시간표에 담기")}
+      ${item("#wizard", "🪄", "시간표 마법사", "안 겹치는 시간표 조합 전부 찾기")}
+      ${item("#tasks", "📌", "시험·과제", "과목별 시험·과제 날짜 적어두기")}
+      ${item("#credits", "🎓", "학점·졸업 요건", "이수 학점, 평점, 목표 평점, 졸업까지 남은 학점")}
+      ${item("#curriculum", "📖", "교육과정", "내 학과 교육과정 안내서 바로 펴기")}
+      ${item("#links", "🔗", "학교 사이트 바로가기", "이루미·강의계획서·자료실 등")}
+      </section>
+      <section class="card"><h2>설정</h2>
       ${item("#boards", "📌", "관심 게시판", "공지를 모아 볼 게시판 고르기")}
+      ${item("#keywords", "🔑", "관심 키워드", "제목에 이 말이 들어간 공지 강조")}
       ${item("#push", "🔔", "새 공지 알림", "고른 게시판에 새 글이 올라오면 알림")}
+      ${item("#settings", "⚙️", "화면·백업", "테마, 글자 크기, 홈 카드, 백업, 데이터 지우기")}
+      ${item("#news", "📰", "변경 내역", "앱에 새로 생긴 기능")}
+      ${item("#review", "✍️", "리뷰 남기기", "불편한 점·바라는 기능 보내기")}
       </section>
       <section class="card"><h2>앱 정보</h2>
         <p class="sub">학생이 만든 비공식 앱이에요. 정확한 내용은 꼭 학교 공지 원문으로 확인해 주세요.</p>
-        <p class="sub">로그인이 없고 개발자 서버도 없어요. 시간표·관심 게시판은 이 브라우저에만 저장돼서 개발자도 볼 수 없어요. AI 챗봇 질문은 답을 만들기 위해 Google(Gemini)로, 새 공지 알림을 켜면 알림 번호와 고른 게시판만 Firebase로 가요.</p>
+        <p class="sub">로그인이 없고 개발자 서버도 없어요. 시간표·학점·담은 공지 같은 개인 기록은 이 브라우저에만 저장돼서 개발자도 볼 수 없어요. AI 챗봇 질문은 답을 만들기 위해 Google(Gemini)로, 새 공지 알림을 켜면 알림 번호와 고른 게시판만 Firebase로 가요.</p>
         <p class="sub">안드로이드는 <a href="${ANDROID_APK}">앱(APK)</a>으로 위젯·수업 알림까지 쓸 수 있어요.</p>
       </section>`;
-  },
-};
-
-routes.schedule = {
-  title: "학사일정", sub: true, tab: "more",
-  html() {
-    const tk = todayKey(), events = data.schedule?.events || [];
-    const groups = {};
-    events.forEach((e) => (groups[e.start.slice(0, 6)] ||= []).push(e));
-    return Object.entries(groups).map(([ym, list]) => `<section class="card"><h2>${+ym.slice(0, 4)}년 ${+ym.slice(4)}월</h2>
-      ${list.map((e) => ((e.end || e.start) < tk ? eventRow(e).replace('class="row"', 'class="row" style="opacity:.45"') : eventRow(e))).join("")}</section>`).join("")
-      || '<div class="empty">일정이 없어요</div>';
   },
 };
 
@@ -453,10 +652,7 @@ routes.chat = {
       chatLog.push({ me: true, text: q }); $("#ci").value = ""; draw();
       chatLog.push({ me: false, text: "답을 만드는 중…" }); draw();
       try { chatLog[chatLog.length - 1].text = await askAI(history, q); countOne(); }
-      catch (err) {
-        console.warn(err);
-        chatLog[chatLog.length - 1].text = /quota|429/i.test(String(err)) ? "지금은 질문이 너무 많이 몰려서 답할 수 없어요. 잠시 뒤에 다시 물어봐 주세요." : "답을 받지 못했어요. 인터넷 연결을 확인하고 다시 물어봐 주세요.";
-      }
+      catch (err) { console.warn(err); chatLog[chatLog.length - 1].text = aiErrorText(err); }
       if (current === "chat") draw();
     };
   },
@@ -484,20 +680,41 @@ async function firebaseApp() {
   }
   return fbApp;
 }
-let aiModel;
-async function askAI(history, q) {
-  const v = FIREBASE_JS;
-  const { getAI, getGenerativeModel, GoogleAIBackend } = await import(`https://www.gstatic.com/firebasejs/${v}/firebase-ai.js`);
-  if (!aiModel) {
-    const app = await firebaseApp();
-    aiModel = getGenerativeModel(getAI(app, { backend: new GoogleAIBackend() }), {
-      model: data.faq?.chatModel || "gemini-3.8-flash",
-      systemInstruction: systemPrompt(),
-    });
+// 무료 한도·붐빔은 모델마다 따로라, 걸리면 faq.json chatModels의 다음 모델로 넘어간다(앱 ChatBot.withFallback)
+const isQuota = (e) => /quota|429|RESOURCE_EXHAUSTED/i.test(String(e));
+const isBusy = (e) => isQuota(e) || /high demand|overloaded|503|UNAVAILABLE/i.test(String(e));
+function aiErrorText(e) {
+  const s = String(e);
+  if (isQuota(e)) {
+    const m = s.match(/retry in (?:(\d+)h)?(?:(\d+)m)?/);
+    const h = +(m?.[1] || 0), min = +(m?.[2] || 0);
+    if (h >= 1) return `오늘 앱 전체가 함께 쓰는 AI 무료 사용량을 다 썼어요. 약 ${h}시간 뒤에 다시 쓸 수 있어요. 그동안 자주 묻는 질문을 이용해 주세요.`;
+    if (min >= 1) return `지금 AI 질문이 몰려 있어요. 약 ${min}분 뒤에 다시 물어봐 주세요.`;
+    return "지금은 AI 질문이 몰려서 답할 수 없어요. 잠시 뒤에 다시 물어봐 주세요.";
   }
-  const chat = aiModel.startChat({ history: history.map((t) => ({ role: t.me ? "user" : "model", parts: [{ text: t.text }] })) });
-  const r = await chat.sendMessage(q);
-  return r.response.text().trim() || "답을 만들지 못했어요. 질문을 조금 바꿔서 다시 물어봐 주세요.";
+  if (isBusy(e)) return "AI 서버가 붐벼요. 잠시 뒤에 다시 물어봐 주세요.";
+  return "답을 받지 못했어요. 인터넷 연결을 확인하고 다시 물어봐 주세요.";
+}
+const aiModels = () => (data.faq?.chatModels?.length ? data.faq.chatModels : [data.faq?.chatModel || "gemini-3.5-flash-lite"]);
+async function aiModel(name, system) {
+  const { getAI, getGenerativeModel, GoogleAIBackend } = await import(`https://www.gstatic.com/firebasejs/${FIREBASE_JS}/firebase-ai.js`);
+  return getGenerativeModel(getAI(await firebaseApp(), { backend: new GoogleAIBackend() }), { model: name, systemInstruction: system });
+}
+async function withFallback(call) {
+  let last;
+  for (const name of aiModels()) {
+    try { return await call(name); } catch (e) { last = e; if (!isBusy(e)) throw e; console.warn(name, "한도·붐빔, 다음 모델로", e); }
+  }
+  load("faq", true).catch(() => {});
+  throw last || new Error("모델 없음");
+}
+async function askAI(history, q) {
+  const system = systemPrompt();
+  return withFallback(async (name) => {
+    const chat = (await aiModel(name, system)).startChat({ history: history.map((t) => ({ role: t.me ? "user" : "model", parts: [{ text: t.text }] })) });
+    const r = await chat.sendMessage(q);
+    return r.response.text().trim() || "답을 만들지 못했어요. 질문을 조금 바꿔서 다시 물어봐 주세요.";
+  });
 }
 // 안드로이드 ChatBot.systemPrompt와 같은 원칙: 자료에 있는 것만, 학사 숫자는 지어내지 않는다
 function systemPrompt() {
@@ -566,8 +783,18 @@ async function setPush(on) {
 }
 
 // ---------- 시작 ----------
-$("#back").onclick = () => (history.length > 1 ? history.back() : (location.hash = "#more"));
-$("#refresh").onclick = async () => { await loadAll(true); toast("새로 불러왔어요"); render(); };
-addEventListener("hashchange", render);
-render();
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+// 다른 화면 파일(study.js·campus.js)이 routes를 다 채운 뒤에 시작한다
+addEventListener("DOMContentLoaded", () => {
+  applyLook();
+  view.addEventListener("click", (e) => {
+    const bm = e.target.closest("[data-bm]");
+    if (bm) { e.preventDefault(); return toggleBookmark(bm.dataset.bm, bm); }
+    const rd = e.target.closest("[data-read]");
+    if (rd) { markRead(rd.dataset.read); rd.parentElement.classList.add("read"); }
+  });
+  $("#back").onclick = () => (history.length > 1 ? history.back() : (location.hash = "#more"));
+  $("#refresh").onclick = async () => { await loadAll(true); toast("새로 불러왔어요"); render(); };
+  addEventListener("hashchange", render);
+  render();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+});

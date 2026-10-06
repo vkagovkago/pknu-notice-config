@@ -17,6 +17,8 @@ on:
       - "faq.json"
       - "version.json"
       - "shuttle.json"
+      - "rooms.json"
+      - "courses/**"
       - ".github/workflows/pages.yml"
 
 permissions:
@@ -45,6 +47,8 @@ jobs:
           # 지난번 배포본의 공지 목록 — 받기 실패한 게시판은 이걸 그대로 쓰고, 새 글 비교에도 쓴다
           curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/notices.json -o site/data/notices.json || true
           curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/holidays.json -o site/data/holidays.json || true
+          curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/library.json -o site/data/library.json || true
+          curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/buildings.json -o site/data/buildings.json || true
           [ -s site/data/notices.json ] && cp site/data/notices.json prev-notices.json || true
       - name: 안드로이드 APK (한글 파일 이름으로)
         # GitHub 릴리스는 파일 이름의 한글을 지운다(_v1.1.1.apk). Pages는 경로 그대로 내려주므로

@@ -416,6 +416,47 @@ def build_holidays():
     return dict(sorted(out.items()))
 
 
+# ---------------- 열람실 좌석 (앱 LibrarySeatRepository와 같은 AJAX) ----------------
+def build_library():
+    out = []
+    for code, label in (("J", "중앙도서관"), ("P", "청운관")):
+        r = HTTP.post("https://libweb.pknu.ac.kr/wp-admin/admin-ajax.php", timeout=TIMEOUT,
+                      data={"action": "pknu_get_table_info", "libGB": code},
+                      headers={"X-Requested-With": "XMLHttpRequest", "Referer": "https://libweb.pknu.ac.kr/"})
+        rooms = [dict(name=o.get("roomName", ""), total=int(o.get("totalSeat") or 0), used=int(o.get("useSeat") or 0),
+                      remain=int(o.get("remainSeat") or 0), open=o.get("useYN") == "Y",
+                      start=o.get("timeStart") or "", end=o.get("timeEnd") or "")
+                 for o in r.json() if int(o.get("totalSeat") or 0) > 0]
+        out.append(dict(name=label, rooms=rooms))
+    return out
+
+
+# ---------------- 캠퍼스 건물 (앱 CampusMapRepository와 같은 API) ----------------
+def build_buildings():
+    out = []
+    for stat, campus in (("D", "대연캠퍼스"), ("Y", "용당캠퍼스")):
+        r = HTTP.post("https://www.pknu.ac.kr/buildingInfoAjax.do", timeout=TIMEOUT, data={"code": "B0000001", "stat": stat},
+                      headers={"X-Requested-With": "XMLHttpRequest", "Referer": "https://www.pknu.ac.kr/main/133"})
+        for o in r.json()["response"]["deps1"]:
+            try:
+                lat, lon = float(o["lat"]), float(o["lon"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if o.get("stat") != "1":
+                out.append(dict(code=o.get("buildingCode", ""), no=o.get("buildingNo", ""), name=o.get("buildingName", ""),
+                                lat=lat, lon=lon, campus=campus))
+    return out
+
+
+def dump_optional(path, fn):
+    # 못 받으면 지난번 배포본(pages.yml이 미리 받아 둠)을 그대로 둔다
+    try:
+        json.dump(dict(updated=dt.datetime.now(KST).isoformat(timespec="minutes"), items=fn()),
+                  open(path, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    except Exception as e:
+        print(os.path.basename(path), e)
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else "site/data"
     os.makedirs(out, exist_ok=True)
@@ -432,8 +473,11 @@ def main():
         json.dump(build_holidays(), open(os.path.join(out, "holidays.json"), "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     except Exception as e:  # 못 받으면 지난번 파일(있으면)을 그대로 쓴다
         print("holidays", e)
-    for f in ("shuttle.json", "faq.json"):
+    dump_optional(os.path.join(out, "library.json"), build_library)
+    dump_optional(os.path.join(out, "buildings.json"), build_buildings)
+    for f in ("shuttle.json", "faq.json", "rooms.json"):
         shutil.copy(os.path.join(ROOT, f), os.path.join(out, f))
+    shutil.copytree(os.path.join(ROOT, "courses"), os.path.join(out, "courses"), dirs_exist_ok=True)
     print(f"게시판 {ok}/{total}곳, 식당 {len(menu['cafeterias'])}곳")
 
 
