@@ -1,7 +1,7 @@
 {
-  "versionCode": 212,
-  "versionName": "1.9.3",
+  "versionCode": 213,
+  "versionName": "1.9.4",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "입학연도를 좌우로 밀어 넘겨요. 자료실 자료는 다시 앱 안에서 열려요. AI 무료 모델 확대. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "전공을 단과대학 > 학부 > 전공으로 펼쳐 골라요. 입학연도 좌우로 넘기기, AI 무료 모델 확대. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
