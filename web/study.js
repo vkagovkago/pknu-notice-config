@@ -665,17 +665,26 @@ function profileDialog(gd) {
   const d = document.createElement("div");
   d.className = "dialog";
   const draw = () => {
-    const depts = (gd.years[p.year] || []).map((x) => x.name);
+    const rows = gd.years[p.year] || [];
+    // 단과대학별로 묶어 보여준다(앱 1.9.4와 같게). 학부 아래 전공은 "학부 › 전공"으로.
+    const grouped = (sel) => {
+      const by = {};
+      rows.forEach((x) => (by[x.college || "기타"] = by[x.college || "기타"] || []).push(x));
+      return Object.entries(by).map(([c, xs]) => `<optgroup label="${esc(c)}">${xs.map((x) => {
+        const label = x.group && x.name.startsWith(x.group) ? x.name : x.group ? `${x.group} › ${x.name}` : x.name;
+        return `<option value="${esc(x.name)}" ${x.name === sel ? "selected" : ""}>${esc(label)}</option>`;
+      }).join("")}</optgroup>`).join("");
+    };
     const regTerms = [];
     for (let y = p.year; y <= +termKey().slice(0, 4); y++) ["1", "2"].forEach((t) => { if (termOrder(`${y}-${t}`) <= termOrder(termKey())) regTerms.push(`${y}-${t}`); });
     d.innerHTML = `<div style="max-height:85vh;overflow:auto"><h3>내 프로필</h3>
       <div class="grid2"><div><label>입학연도</label><select id="py">${years.map((y) => `<option ${y === p.year ? "selected" : ""}>${y}</option>`).join("")}</select></div>
         <div><label>입학 학년</label><select id="pe">${[1, 2, 3, 4].map((g) => `<option value="${g}" ${g === p.entryGrade ? "selected" : ""}>${g === 1 ? "1학년 (신입)" : g + "학년 편입"}</option>`).join("")}</select></div></div>
-      <label>주전공 (${p.year}학년도 학과 이름)</label><select id="pm"><option value="">고르세요</option>${depts.map((x) => `<option ${x === p.major ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>
+      <label>주전공 (${p.year}학년도 학과 이름)</label><select id="pm"><option value="">고르세요</option>${grouped(p.major)}</select>
       <label>수업연한</label><select id="pyr"><option value="4" ${p.years === 4 ? "selected" : ""}>4년</option><option value="5" ${p.years === 5 ? "selected" : ""}>5년 (건축학 등)</option></select>
       <label>다전공</label>${p.seconds.map((s, i) => `<div class="row" style="padding:4px 0"><div class="grow">${s.kind === "DOUBLE" ? "복수전공" : "부전공"} ${esc(s.dept)}</div><button class="chip" data-sdel="${i}">✕</button></div>`).join("")}
       <div class="grid2"><select id="sk"><option value="DOUBLE">복수전공</option><option value="MINOR">부전공</option></select>
-        <select id="sd"><option value="">학과 고르기</option>${depts.map((x) => `<option>${esc(x)}</option>`).join("")}</select></div>
+        <select id="sd"><option value="">학과 고르기</option>${grouped("")}</select></div>
       <label>휴학·졸업유예한 학기 (눌러서 바꾸기: 재학 → 휴학 → 졸업유예)</label>
       <div class="chips" style="flex-wrap:wrap">${regTerms.map((k) => {
         const s = p.leaves.includes(k) ? "휴학" : p.deferrals.includes(k) ? "졸업유예" : "";

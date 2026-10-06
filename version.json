@@ -1,7 +1,7 @@
 {
-  "versionCode": 218,
-  "versionName": "1.11.1",
+  "versionCode": 219,
+  "versionName": "1.11.2",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "'내 학과 교육과정'에 빠져 있던 학과·전공을 더하고 쪽이 밀리던 문제를 고쳤어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "학과 이름 개편 반영, '내 학과 교육과정' 빠진 학과 추가·쪽 밀림 수정. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
