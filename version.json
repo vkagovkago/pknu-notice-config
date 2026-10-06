@@ -1,7 +1,7 @@
 {
-  "versionCode": 216,
-  "versionName": "1.10.0",
+  "versionCode": 217,
+  "versionName": "1.11.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "자료실에 지난 교육과정(2021~2025학년도)을 더했어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "'내 학과 교육과정'에서 학년도를 고르고, 학과별 로드맵을 바로 펴요. 지난 교육과정(2021~2025). 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
