@@ -1,7 +1,7 @@
 {
-  "versionCode": 209,
-  "versionName": "1.9.0",
+  "versionCode": 210,
+  "versionName": "1.9.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "복수전공·부전공 여러 개, 수업연한(5년제)·졸업유예, 자료실 자료는 학교 홈페이지로. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "같은 인터넷 강의가 시간표에 두 번 담기던 문제 수정. 복수전공·부전공 여러 개, 수업연한·졸업유예. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
