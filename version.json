@@ -1,7 +1,7 @@
 {
-  "versionCode": 211,
-  "versionName": "1.9.2",
+  "versionCode": 212,
+  "versionName": "1.9.3",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "AI 챗봇·요약의 무료 모델을 늘려 '질문이 몰려서'가 덜 떠요. 같은 인터넷 강의 중복 담김 수정. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "입학연도를 좌우로 밀어 넘겨요. 자료실 자료는 다시 앱 안에서 열려요. AI 무료 모델 확대. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
