@@ -26,12 +26,12 @@ service cloud.firestore {
         && request.resource.data.size() == 1
         && request.resource.data.keys()[0].matches('v[0-9_]{1,20}')
         && request.resource.data.values()[0] == 1;
+      // 칸 하나만 바뀌는 것만. 규칙 언어의 Set에는 toList()가 없어서 바뀐 칸의 값을 집어 +1인지 볼 수 없다
+      // (2026-10-06까지 그렇게 써서 모든 갱신이 거부됐다 — 문서를 처음 만든 1회만 세졌다). 대략적인 추세용이라 감수.
       allow update: if statsDoc(doc)
         && request.resource.data.size() <= 200
         && request.resource.data.diff(resource.data).affectedKeys().size() == 1
-        && request.resource.data.diff(resource.data).affectedKeys().toList()[0].matches('v[0-9_]{1,20}')
-        && request.resource.data[request.resource.data.diff(resource.data).affectedKeys().toList()[0]]
-           == resource.data.get(request.resource.data.diff(resource.data).affectedKeys().toList()[0], 0) + 1;
+        && request.resource.data.diff(resource.data).removedKeys().size() == 0;
       allow delete: if false;
     }
     match /{document=**} {
