@@ -1,7 +1,7 @@
 {
-  "versionCode": 206,
-  "versionName": "1.7.1",
+  "versionCode": 208,
+  "versionName": "1.8.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "AI 챗봇 무료 사용량 문제 수정(모델 자동 전환), HelloLMS 알림에서 과제·시험 자동으로 담기. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "내 프로필(입학연도·전공·학적·휴학 기간)로 학년·학기와 학기 평점 표시, 강의계획서 담기는 위젯 보관용, 교육과정은 학교 페이지로. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
