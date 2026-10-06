@@ -212,7 +212,18 @@ function applyLook() {
   view.style.zoom = store.get("scale", 1);
 }
 // 개인 기록만 백업한다(알림 토큰·AI 사용 횟수 같은 이 기기 값은 뺀다)
-const NOT_BACKED = ["pushOn", "pushToken", "aiUse", "hideInstall"];
+const NOT_BACKED = ["pushOn", "pushToken", "aiUse", "hideInstall", "lastBackup", "backupBase", "backupSnooze"];
+function exportBackup() {
+  const out = { app: "pknu-notice-web", saved: new Date().toISOString(), data: {} };
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!NOT_BACKED.includes(k)) out.data[k] = store.get(k, null); }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out)], { type: "application/json" }));
+  a.download = `공지알리미_백업_${todayKey()}.json`;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  store.set("lastBackup", Date.now());
+  toast("백업 파일을 받았어요. 파일 앱·클라우드에 보관해 두세요");
+}
 routes.settings = {
   title: "화면·백업", sub: true, tab: "more",
   html() {
@@ -220,7 +231,8 @@ routes.settings = {
     return `<section class="card"><h2>테마</h2><div class="chips">${[["auto", "기기 설정 따라"], ["light", "밝게"], ["dark", "어둡게"]].map(([v, l]) => `<button class="chip ${t === v ? "on" : ""}" data-theme="${v}">${l}</button>`).join("")}</div></section>
       <section class="card"><h2>글자 크기</h2><div class="chips">${SCALES.map(([v, l]) => `<button class="chip ${sc === v ? "on" : ""}" data-scale="${v}">${l}</button>`).join("")}</div></section>
       <section class="card"><h2>홈 화면 카드</h2>${HOME_CARDS.map(([k, l]) => `<label class="row"><input type="checkbox" data-home="${k}" ${hidden.has(k) ? "" : "checked"}><div class="grow">${l}</div></label>`).join("")}</section>
-      <section class="card"><h2>백업</h2><p class="sub">시간표·학점·담은 공지·설정을 파일로 받아 두었다가 다른 폰·브라우저에서 가져올 수 있어요. 안드로이드 앱의 설정 백업 파일도 가져올 수 있어요.</p>
+      <section class="card"><h2>백업</h2>${storageNote()}<p class="sub">시간표·학점·담은 공지·설정을 파일로 받아 두었다가 다른 폰·브라우저에서 가져올 수 있어요. 안드로이드 앱의 설정 백업 파일도 가져올 수 있어요.</p>
+        <p class="sub">마지막 백업: <b>${store.get("lastBackup", 0) ? new Date(store.get("lastBackup", 0)).toLocaleDateString("ko-KR") : "없음"}</b> · 오래 보관 요청: <b id="persist">확인 중</b></p>
         <div class="btns"><button class="btn" id="bexp">백업 파일 받기</button><label class="btn ghost">백업 가져오기<input type="file" id="bimp" accept=".json,application/json" hidden></label></div></section>
       <section class="card"><h2>데이터 모두 지우기</h2><p class="sub">이 브라우저에 저장된 시간표·학점·설정을 전부 지워요. 되돌릴 수 없어요.</p>
         <button class="btn danger" id="wipe">모두 지우기</button></section>`;
@@ -231,14 +243,10 @@ routes.settings = {
     view.querySelectorAll("[data-home]").forEach((cb) => (cb.onchange = () => {
       store.set("homeHidden", [...view.querySelectorAll("[data-home]")].filter((x) => !x.checked).map((x) => x.dataset.home));
     }));
-    $("#bexp").onclick = () => {
-      const out = { app: "pknu-notice-web", saved: new Date().toISOString(), data: {} };
-      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (!NOT_BACKED.includes(k)) out.data[k] = store.get(k, null); }
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([JSON.stringify(out)], { type: "application/json" }));
-      a.download = `공지알리미_백업_${todayKey()}.json`;
-      document.body.append(a); a.click(); a.remove();
-    };
+    $("#bexp").onclick = () => { exportBackup(); render(); };
+    (navigator.storage?.persisted?.() || Promise.resolve(null)).then((ok) => {
+      if ($("#persist")) $("#persist").textContent = ok ? "허용됨" : ok === false ? (isIOS && !isStandalone() ? "안 됨 (홈 화면 아이콘으로 쓰세요)" : "안 됨") : "지원 안 함";
+    }).catch(() => {});
     $("#bimp").onchange = async (e) => {
       try {
         const j = JSON.parse(await e.target.files[0].text());

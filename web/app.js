@@ -206,7 +206,7 @@ routes.home = {
     const hidden = new Set(store.get("homeHidden", []));
     const show = (id, html) => (hidden.has(id) ? "" : html);
 
-    return `
+    return `${backupCard()}
       ${!window.FIREBASE_CONFIG ? "" : show("chat", '<a class="card banner" href="#chat">🤖 <b>AI 챗봇</b>에게 학교생활 물어보기 ›</a>')}
       <section class="card"><h2>오늘 · ${now.getMonth() + 1}월 ${now.getDate()}일 (${DAYS[di]})</h2>
         <div class="row"><span>🗓️</span><div class="grow">${cls}</div></div>
@@ -233,6 +233,8 @@ routes.home = {
   },
   after() {
     $("#regics") && ($("#regics").onclick = () => courseRegAlarm(courseRegEvent()));
+    $("#bnow") && ($("#bnow").onclick = () => { exportBackup(); render(); });
+    $("#blater") && ($("#blater").onclick = () => { store.set("backupSnooze", Date.now() + 7 * DAY_MS); render(); });
   },
 };
 
@@ -265,14 +267,36 @@ function examLine() {
   return left <= 0 ? `${name} 기간이에요 (${range})` : `${name} D-${left} (${range})`;
 }
 
+// ---------- 기록 보관 ----------
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || !!navigator.standalone;
+const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+const hasRecords = () => !!(myClasses().length || store.get("tasks", []).length || Object.keys(bookmarks()).length
+  || Object.keys(store.get("credits", {})).length || store.get("profile", null));
+// 아이폰 사파리는 7일 넘게 안 연 사이트의 저장공간을 지울 수 있다(홈 화면 아이콘은 예외). 둘은 저장공간도 따로다.
+const storageNote = () => (isIOS && !isStandalone() && hasRecords()
+  ? `<p class="note warnnote">⚠ 사파리에서 그냥 쓰면 7일 넘게 안 열었을 때 기록이 지워질 수 있어요. <b>홈 화면에 추가</b>한 아이콘으로 쓰면 안전해요.
+    사파리와 홈 화면 아이콘은 기록이 따로라, 여기 넣은 기록은 <a href="#settings">백업 → 가져오기</a>로 옮겨 주세요.</p>` : "");
+
+// 마지막 백업(없으면 처음 기록이 보인 때)에서 30일이 지나면 홈에 알린다. "일주일 뒤에"를 누르면 그만큼 미룬다.
+const DAY_MS = 864e5;
+function backupCard() {
+  if (!hasRecords()) return "";
+  const now = Date.now(), last = store.get("lastBackup", 0), base = last || store.get("backupBase", 0);
+  if (!base) { store.set("backupBase", now); return ""; }
+  if (now - base < 30 * DAY_MS || now < store.get("backupSnooze", 0)) return "";
+  return `<section class="card"><h2>💾 백업할 때가 됐어요</h2>
+    <p class="sub">${last ? `마지막 백업 후 ${Math.floor((now - last) / DAY_MS)}일 지났어요.` : "아직 백업한 적이 없어요."}
+      기록은 이 브라우저에만 있어서 폰을 바꾸거나 방문 기록을 지우면 사라져요. 파일로 받아 두면 언제든 다시 가져올 수 있어요.</p>
+    <div class="btns"><button class="btn" id="bnow">지금 백업</button><button class="btn ghost" id="blater">일주일 뒤에</button></div></section>`;
+}
+
 // 아이폰 사파리에서 처음 열었을 때만 "홈 화면에 추가" 안내
 function installCard() {
-  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
-  if (standalone || store.get("hideInstall", false)) return "";
-  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  if (isStandalone() || store.get("hideInstall", false)) return "";
+  const ios = isIOS;
   const android = /Android/.test(navigator.userAgent);
   return `<section class="card"><h2>📲 앱처럼 쓰기</h2>
-    ${ios ? '<p>사파리 아래쪽 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b>를 누르면 앱처럼 아이콘이 생겨요.</p>'
+    ${ios ? '<p>사파리 아래쪽 <b>공유 버튼(□↑)</b> → <b>홈 화면에 추가</b>를 누르면 앱처럼 아이콘이 생겨요. 시간표 같은 기록도 홈 화면 아이콘에서 써야 오래 안전하게 남아요.</p>'
       : android ? `<p>안드로이드는 <a href="${ANDROID_APK}">앱(APK)을 받아</a> 쓰면 위젯·수업 알림까지 쓸 수 있어요.</p>`
       : "<p>휴대폰에서 열어 홈 화면에 추가하면 앱처럼 쓸 수 있어요.</p>"}
     <button class="btn ghost" onclick="store.set('hideInstall',true);render()">다시 보지 않기</button></section>`;
@@ -425,7 +449,7 @@ routes.timetable = {
   html() {
     const list = termClasses(viewTerm), online = list.filter((c) => c.online), cl = clashes(list);
     const tasks = termTasks(viewTerm).filter((t) => !t.done);
-    return `<div class="termnav"><button class="chip" id="tprev" aria-label="이전 학기">‹</button><b>${termLabel(viewTerm)}</b>
+    return `${storageNote()}<div class="termnav"><button class="chip" id="tprev" aria-label="이전 학기">‹</button><b>${termLabel(viewTerm)}</b>
         <button class="chip" id="tnext" aria-label="다음 학기">›</button>${viewTerm !== termKey() ? '<button class="chip" id="tnow">이번 학기로</button>' : ""}</div>
       ${cl.length ? `<section class="card"><h2>⚠ 시간이 겹쳐요</h2>${cl.map(([a, b]) => `<div class="sub">${DAYS[a.day]} ${hm(Math.max(a.start, b.start))} ${esc(a.name)} ↔ ${esc(b.name)}</div>`).join("")}</section>` : ""}
       ${gridHtml(list) || '<section class="card"><div class="empty">아직 수업이 없어요. 과목을 검색해서 담거나 직접 추가해 보세요.</div></section>'}
@@ -786,6 +810,8 @@ async function setPush(on) {
 // 다른 화면 파일(study.js·campus.js)이 routes를 다 채운 뒤에 시작한다
 addEventListener("DOMContentLoaded", () => {
   applyLook();
+  // 브라우저에 "저장공간을 함부로 지우지 말라"고 요청(홈 화면 앱·크롬은 보통 허용, 거절돼도 그대로 쓴다)
+  navigator.storage?.persist?.().catch(() => {});
   view.addEventListener("click", (e) => {
     const bm = e.target.closest("[data-bm]");
     if (bm) { e.preventDefault(); return toggleBookmark(bm.dataset.bm, bm); }
