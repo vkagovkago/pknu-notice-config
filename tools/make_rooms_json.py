@@ -69,13 +69,16 @@ def list_courses(year, term, grsc):
     out = []
     for row in re.findall(r"<Row>(.*?)</Row>", r.text, re.S):
         col = lambda i: (re.search(r'<Col id="%s">([^<]*)' % i, row) or [0, ""])[1]
-        if not col("STAFF_NO") or not col("COLG_NM"):  # 학점교류(KCU·OCU)는 강의실이 없다
+        # 학점교류 인터넷 강의(KCU·OCU): 학수번호 K·U, 단과대학·학과 칸이 비어 있다. 강의계획서(시간·강의실)는 없지만
+        # 앱의 시간표 과목 검색에서 담을 수 있게 목록에는 남긴다(앱 1.12.0부터 "인터넷 강의"로 거른다).
+        cyber = col("COURSE_NO")[:1] in ("K", "U") and not col("COLG_NM")
+        if not cyber and (not col("STAFF_NO") or not col("COLG_NM")):
             continue
         out.append({"no": col("COURSE_NO"), "cls": col("DCLSS_NO"), "staff": col("STAFF_NO"),
                     "credit": col("PNT_THEO_PRAC"), "name": col("SBJT_KOR_NM"),
                     "staffName": col("STAFF_NM"), "college": col("COLG_NM"), "dept": col("DEPT_NM"),
                     "cat": col("SBJT_FG_NM"), "method": col("LSN_MTHD_FG"), "kor": col("KOR_YN"),
-                    "grad": 1 if grsc == "U0001002" else 0})
+                    "grad": 1 if grsc == "U0001002" else 0, "cyber": cyber})
     return out
 
 
@@ -168,7 +171,7 @@ def build(year, term):
     rooms, done, used = {}, 0, 0
 
     def work(c):
-        return c, plan_info(year, term, c)
+        return c, (None if c.get("cyber") else plan_info(year, term, c))
 
     # 학교 서버에 몰아치지 않게 4개씩만 동시에 부른다
     with ThreadPoolExecutor(4) as pool:
@@ -291,7 +294,25 @@ def build_catalogs(from_year, out_dir):
             write_courses_to(path, key, catalog)
 
 
+# 이미 만든 학기 파일에 인터넷 강의 줄만 더한다(강의계획서는 안 받으므로 금방 끝난다).
+def add_cyber(out_dir):
+    import os, glob
+    for path in sorted(glob.glob(os.path.join(out_dir, "*.json"))):
+        d = json.load(open(path, encoding="utf-8"))
+        year, tag = d["term"].split("-")
+        term = {v: k for k, v in SEASON_TAG.items()}[tag]
+        have = {(r[0], r[1]) for r in d["rows"]}
+        add = [c for c in list_courses(int(year), term, "U0001001") if c["cyber"] and (c["no"], c["cls"]) not in have]
+        d["rows"] += [[c["no"], c["cls"], c["name"], c["staff"], c["staffName"], c["college"], c["dept"],
+                       c["cat"], c["credit"], c["method"], c["kor"], "", "", "", c["grad"]] for c in add]
+        json.dump(d, open(path, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+        print(f"{d['term']}: 인터넷 강의 {len(add)}개 더함", flush=True)
+
+
 def main():
+    if sys.argv[1] == "add_cyber":
+        add_cyber(sys.argv[2])
+        return
     # python make_rooms_json.py 2026 U0003002 rooms.json   (학기를 직접 고름)
     # python make_rooms_json.py auto rooms.json            (날짜로 학기를 고름 — GitHub Actions용)
     if sys.argv[1] == "catalog":
