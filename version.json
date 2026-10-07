@@ -1,7 +1,7 @@
 {
-  "versionCode": 222,
-  "versionName": "1.13.0",
+  "versionCode": 223,
+  "versionName": "1.13.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "자료실 문서 쪽 넘기기가 쉬워졌어요(막대·쪽 번호 바로 가기). 문서 안 단어 찾기도 생겼어요 — 그림으로 된 문서는 글자 인식으로 찾아요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "에타 시간표 사진으로 채우기가 과목을 더 잘 찾아요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
