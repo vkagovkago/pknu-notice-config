@@ -1,7 +1,7 @@
 {
-  "versionCode": 220,
-  "versionName": "1.11.3",
+  "versionCode": 221,
+  "versionName": "1.12.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "안내 문구·자주 묻는 질문 정리, 학과 이름 개편 반영. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "에타 시간표 사진으로 채우기(AI), 시간표에서 인터넷 강의 담기, 강의계획서 위젯 학기별 보기, 입학연도별 졸업소요학점. 새로 설치하면 공지 알림이 안 오던 문제도 고쳤어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
