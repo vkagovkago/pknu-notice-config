@@ -84,6 +84,7 @@ function conflictsWith(c, term) {
 // ================= 과목 검색 =================
 const sq = { text: "", field: "name", college: "", dept: "", grade: "", cat: "", credit: "", sort: "", free: false, grad: false };
 let results = [];
+const CYBER = "@cyber";
 routes.search = {
   title: "과목 검색", sub: true, tab: "timetable",
   html(arg) {
@@ -113,13 +114,15 @@ routes.search = {
     const uniq = (xs) => [...new Set(xs.filter(Boolean))].sort((a, b) => a.localeCompare(b, "ko"));
     const fillDepts = () => opts($("#sdep"), "전체 학과", uniq(items.filter((c) => !sq.college || c.college === sq.college).map((c) => c.dept)), sq.dept);
     opts($("#scol"), "전체 단과대학", uniq(items.map((c) => c.college)), sq.college);
+    // KCU·OCU 학점교류 인터넷 강의(단과대학·학과 칸이 빈 줄)
+    if (items.some((c) => c.cyber)) $("#scol").insertAdjacentHTML("beforeend", `<option value="${CYBER}" ${sq.college === CYBER ? "selected" : ""}>인터넷 강의 (KCU·OCU)</option>`);
     fillDepts();
     opts($("#scat"), "전체 이수구분", uniq(items.map((c) => c.cat)), sq.cat);
     const norm = (s) => s.replace(/\s/g, "").toLowerCase();
     const draw = () => {
       const t = norm(sq.text);
-      results = items.filter((c) => c.grad === sq.grad
-        && (!sq.college || c.college === sq.college) && (!sq.dept || c.dept === sq.dept)
+      results = items.filter((c) => (sq.college === CYBER ? c.cyber : c.grad === sq.grad
+        && (!sq.college || c.college === sq.college) && (!sq.dept || c.dept === sq.dept))
         && (!sq.grade || c.grades.includes(sq.grade)) && (!sq.cat || c.cat === sq.cat) && (!sq.credit || c.creditTok === sq.credit)
         && (!t || (sq.field === "name" ? norm(c.name).includes(t) : sq.field === "staff" ? norm(c.staff).includes(t)
           : sq.field === "room" ? norm(c.room).includes(t) : `${c.no}-${c.cls}`.includes(t)))
@@ -132,7 +135,7 @@ routes.search = {
           const clash = c.slots.length ? conflictsWith(c, term) : [];
           const on = wizKeys ? wizKeys.has(c.key) : isAdded(c, term);
           return `<div class="row"><div class="grow" data-ci="${i}"><div class="t"><b>${esc(c.name)}</b> <span class="sub">${esc(c.cls)}분반</span></div>
-            <div class="sub">${esc(c.staff || "교수 미정")} · ${esc(c.cat)} · ${c.point == null ? "?" : fmtNum(c.point)}학점 · ${esc(c.method)}${c.grade ? " · " + esc(c.grade) + (/^\d/.test(c.grade) ? "학년" : "") : ""}</div>
+            <div class="sub">${esc(c.cyber ? `${c.cyber} 학점교류` : c.staff || "교수 미정")} · ${esc(c.cat)} · ${c.point == null ? "?" : fmtNum(c.point)}학점 · ${esc(c.method)}${c.grade ? " · " + esc(c.grade) + (/^\d/.test(c.grade) ? "학년" : "") : ""}</div>
             <div class="sub">${esc(describeTime(c))}${c.room ? " · " + esc(c.room) : ""}</div>
             ${clash.length ? `<div class="sub" style="color:var(--red)">⚠ ${esc(clash.join(", "))}와(과) 겹쳐요</div>` : ""}</div>
             <button class="btn small ${on ? "ghost" : ""}" data-add="${i}">${wizKeys ? (on ? "후보 ✓" : "후보로") : on ? "담음" : "담기"}</button></div>`;
@@ -169,7 +172,7 @@ function courseDialog(c, term, onChange) {
   const groups = wizardGroups(term);
   const row = (k, v) => (v ? `<div class="row"><span class="sub" style="width:72px">${k}</span><div class="grow">${v}</div></div>` : "");
   d.innerHTML = `<div><h3>${esc(c.name)} <span class="sub">${esc(c.cls)}분반</span></h3>
-    ${row("교수", esc(c.staff))}${row("강의시간", esc(describeTime(c)))}${row("강의실", esc(c.room))}
+    ${row("교수", c.cyber ? "" : esc(c.staff))}${row("강의시간", esc(describeTime(c)))}${row("강의실", esc(c.room))}
     ${row("이수구분", esc(c.cat))}${row("학점-이론-실습", esc(c.credit))}${row("강의형태", esc(c.method))}
     ${row("개설학과", esc([c.college, c.dept].filter(Boolean).join(" · ")))}${row("학년", esc(c.grade))}${row("과목코드", `${esc(c.no)}-${esc(c.cls)}`)}
     ${row("영어강의", c.kor === "N" ? "예" : "")}
@@ -716,33 +719,96 @@ function profileDialog(gd) {
   draw();
 }
 
-// ================= 교육과정 (안내서 PDF의 학과별 쪽, 앱 Curriculum) =================
+// ================= 교육과정 (앱 CurriculumCard·CurriculumYears·PastCurriculum) =================
+// 2026 교육과정은 curriculum_index, 2026 로드맵과 2021~2025 문서는 curriculum_years. 학과 이름이 해마다 바뀌어
+// 앱과 같은 순서로 짝짓는다: 같은 이름 → "(…이전 입학자)" 뗀 이름 → 학부 → 어간 → 개편표 → 같은 학부 첫 전공.
+const RENAMED = {"고분자·화학소재공학부 - 에너지화학소재공학전공": ["공업화학·고분자공학부 - 공업화학전공", "공업화학·고분자공학부", "공업화학과"], "행정복지학부 - 사회복지학전공": ["행정학과"], "전기공학부 - 디스플레이반도체공학전공": ["융합디스플레이공학과"], "시스템경영·안전공학부 - 기술·데이터공학전공": ["시스템경영공학부 - 기술·서비스공학전공"], "지구환경시스템과학부 - 환경지질과학전공": ["지구환경과학과"], "지구환경시스템과학부 - 위성정보융합공학전공": ["공간정보시스템공학과"], "미디어커뮤니케이션학부 - 언론정보전공": ["신문방송학과"], "데이터정보과학부 - 통계·데이터사이언스전공": ["통계학과"], "경제학부 - 자원환경경제학전공 (2021학년도 이전 입학자)": ["해양수산경영경제학부 - 자원환경경제학전공", "해양수산경영경제학부"], "미래융합학부 - 평생교육·상담학전공": ["융합인재개발학부 - 평생교육·상담학전공", "융합인재개발학부", "평생교육·상담학과"], "미래융합학부 - 경찰범죄심리학전공": ["융합인재개발학부 - 경찰범죄심리학전공", "융합인재개발학부", "공공안전경찰학과"], "미래융합학부 - 사회복지서비스학전공": ["융합인재개발학부 - 사회복지서비스학전공", "융합인재개발학부"], "미래융합학부 - 기계조선공조공학전공": ["스마트융합공학부 - 스마트기계모빌리티전공", "스마트융합공학부", "융합공학부", "기계조선융합공학과"], "미래융합학부 - 전기전자SW공학전공": ["스마트융합공학부 - 스마트전기전자공학전공", "스마트융합공학부", "융합공학부", "전기전자소프트웨어공학과"], "글로벌비즈니스트랙": ["글로벌자율전공학부(글로벌비즈니스트랙)", "글로벌자율전공학부"], "글로벌매니지먼트·거버넌스트랙": ["글로벌자율전공학부(글로벌매니지먼트·거버넌스트랙)", "글로벌자율전공학부"]};
+const PAST_DOCS = [[2025, "전공교육과정 편성 안내서", "https://www.pknu.ac.kr/upload/media/2025/03/11/ac1a35e9-ca09-43aa-ba23-bae4f9a5f91f.pdf"], [2025, "교양교육과정 편성 안내서", "https://www.pknu.ac.kr/upload/media/2025/03/11/a87ab7ab-dfff-4799-a1c4-914a62f6f93f.pdf"], [2025, "다전공(융합·학생설계·마이크로전공) 교육과정 안내", "https://www.pknu.ac.kr/upload/media/2025/03/11/0b01a2b7-164b-4620-b642-b7a84519b932.pdf"], [2025, "전공 능력 강화 로드맵 및 모듈형 교육과정 안내서", "https://www.pknu.ac.kr/upload/media/2025/03/11/0ebc6714-a467-4d5c-aa1c-378c7b24c8b9.pdf"], [2024, "전공교육과정", "https://www.pknu.ac.kr/upload/media/2024/03/07/3013e4eb-229b-457b-bacd-70144da006f4.pdf"], [2024, "교양교육과정", "https://www.pknu.ac.kr/upload/media/2024/03/07/947cc149-e076-4595-8674-1af2db85da98.pdf"], [2024, "교육과정 편성 및 운영 지침", "https://www.pknu.ac.kr/upload/media/2024/03/07/0233ff34-12d7-4f2e-8fce-9c404845b90e.pdf"], [2024, "전공 능력 강화 로드맵 및 모듈형 교육과정 안내서", "https://www.pknu.ac.kr/upload/media/2024/03/07/2397f0df-28b9-426f-ab5a-464071670be8.pdf"], [2023, "교양교육과정", "https://www.pknu.ac.kr/upload/media/2023/02/27/976cd3f5-a7cb-479c-9dc1-b099488b6583.pdf"], [2023, "교육과정 편성 및 운영 지침", "https://www.pknu.ac.kr/upload/media/2023/02/27/f2164870-7086-4c05-aa7e-a38d4616bda6.pdf"], [2023, "전공 능력 강화 로드맵 및 모듈형 교육과정 안내서", "https://www.pknu.ac.kr/upload/media/2023/02/27/2ca6917a-927c-47f9-b2ca-0b7e2987f4a1.pdf"], [2022, "교양교육과정", "https://www.pknu.ac.kr/upload/media/2022/03/02/e1af7f50-9329-441c-8d9b-bdfd540a48b8.pdf"], [2022, "교육과정 편성 및 운영 지침", "https://www.pknu.ac.kr/upload/media/2021/10/22/6a7c063f-e1ad-4a8d-8126-561c0b0d8839.pdf"], [2022, "전공 능력 강화 로드맵 및 모듈형 교육과정 안내서", "https://www.pknu.ac.kr/upload/media/2022/03/02/9b415dee-4655-4775-953f-d2064e085c81.pdf"], [2021, "교양교육과정", "https://www.pknu.ac.kr/upload/media/2021/03/17/ec7bc82a-818e-407e-b0d1-453e7c29ed4a.pdf"], [2021, "교육과정 편성 및 운영 지침", "https://www.pknu.ac.kr/upload/media/2021/04/16/df76a2d5-4c32-4057-b080-89e470f1bad0.pdf"], [2021, "전공 능력 강화 로드맵 및 모듈형 교육과정 안내서", "https://www.pknu.ac.kr/upload/media/2021/04/16/eae84eda-58bc-4acb-b05e-34123408fb23.pdf"]];
+const GRAD_GUIDE = "https://www.pknu.ac.kr/main/238";
+function matchEntry(entries, picked) {
+  const by = (n) => entries.find((e) => e.name === n);
+  if (by(picked)) return by(picked);
+  const base = picked.replace(/\s*\(\d{4}학년도 이전 입학자\)/, "").trim();
+  if (by(base)) return by(base);
+  const fac = base.split(" - ")[0].trim(), major = base.includes(" - ") ? base.split(" - ").slice(1).join(" - ").trim() : base;
+  if (fac !== base && by(fac)) return by(fac);
+  const st = entries.find((e) => sameDept(e.name.includes(" - ") ? e.name.split(" - ").slice(1).join(" - ").trim() : e.name, major));
+  if (st) return st;
+  for (const old of RENAMED[picked] || []) if (by(old)) return by(old);
+  return entries.find((e) => e.name.startsWith(fac + " - ")) || null;
+}
+const pageLabel = (e) => (e.start === e.end ? `${e.start}쪽` : `${e.start}~${e.end}쪽`);
+function gradLine(d) {
+  const out = [`졸업 ${d.total}`];
+  if (d.gyo != null) out.push(`교양 ${d.gyo}${d.gyoMax > d.gyo ? `~${d.gyoMax}` : ""}`);
+  if (d.major != null) out.push(`전공 ${d.major}${d.majorReq != null ? `(필수 ${d.majorReq})` : ""}`);
+  if (d.free != null) out.push(`자유선택 ${d.free}`);
+  if (d.first != null || d.double != null) out.push(`복수전공 시 제1전공 ${d.first ?? "-"} / 복수 ${d.double ?? "-"}`);
+  return out.join(" · ");
+}
+
 routes.curriculum = {
   title: "교육과정", sub: true, tab: "more",
   html() { return '<div id="cuv"><div class="empty">불러오는 중…</div></div>'; },
   async after() {
-    let ci;
+    let ci, cy = { docs: [] }, gd = null;
     try { ci = await load("static/curriculum_index"); } catch { return; }
+    try { cy = await load("static/curriculum_years"); } catch {}
+    try { gd = await load("static/grad_requirements"); } catch {}
     if (current !== "curriculum") return;
-    const picked = new Set(store.get("curriculum", []));
-    const row = (e) => `<div class="row"><a class="grow" href="${esc(ci.pdfUrl)}#page=${e.start}" target="_blank" rel="noopener" style="color:inherit">${esc(e.name)}
-      <div class="sub">${esc(e.college)} · ${e.start}~${e.end}쪽</div></a><button class="star ${picked.has(e.name) ? "on" : ""}" data-cu="${esc(e.name)}">${picked.has(e.name) ? "★" : "☆"}</button></div>`;
-    $("#cuv").innerHTML = `<p class="sub">${esc(ci.title)} · 학과를 누르면 그 쪽이 펴져요 (아이폰은 쪽 번호를 직접 넘겨야 할 수 있어요)</p>
-      ${picked.size ? `<section class="card"><h2>내 학과</h2>${ci.entries.filter((e) => picked.has(e.name)).map(row).join("")}</section>` : ""}
-      <input type="search" id="cuq" placeholder="학과 이름 검색">
-      <section class="card" id="culist"></section>
-      <p class="note"><a href="https://www.pknu.ac.kr/main/106" target="_blank" rel="noopener">학교 교육과정 페이지 ›</a> (전자책·전체 PDF)</p>`;
+    const p = profile();
+    const years = [...new Set([2026, ...cy.docs.map((d) => d.year)])].sort((a, b) => b - a);
+    const gyears = gd ? Object.keys(gd.years).map(Number).sort((a, b) => b - a) : [];
+    let year = years.includes(p?.year) ? p.year : years[0];
+    let gyear = gyears.includes(p?.year) ? p.year : gyears[0];
+    const link = (url, page, label) => `<a class="btn small ghost" href="${esc(url)}#page=${page}" target="_blank" rel="noopener">${label}</a>`;
     const draw = () => {
-      const q = $("#cuq").value.trim();
-      $("#culist").innerHTML = ci.entries.filter((e) => !q || e.name.includes(q) || e.college.includes(q)).map(row).join("") || '<div class="empty">없어요</div>';
+      const picked = new Set(store.get("curriculum", []));
+      const curDoc = cy.docs.find((d) => d.year === year && d.kind === "curriculum"), roadDoc = cy.docs.find((d) => d.year === year && d.kind === "roadmap");
+      const mine = ci.entries.filter((e) => picked.has(e.name)).map((e) => {
+        const cur = year === 2026 ? e : curDoc && matchEntry(curDoc.entries, e.name);
+        const road = roadDoc && matchEntry(roadDoc.entries, e.name);
+        // 2026 로드맵 장은 2026 안내서 안에 있다. 2021~2023은 로드맵 문서가 교육과정도 겸한다
+        const roadUrl = year === 2026 ? ci.pdfUrl : roadDoc?.pdfUrl;
+        return `<div class="row"><div class="grow"><div>${esc(e.name)}</div><div class="btns" style="margin-top:4px">
+          ${cur ? link(year === 2026 ? ci.pdfUrl : curDoc.pdfUrl, cur.start, `교육과정 ${pageLabel(cur)}`) : ""}
+          ${road ? link(roadUrl, road.start, `${cur ? "로드맵" : "교육과정·로드맵"} ${pageLabel(road)}`) : ""}
+          ${!cur && !road ? `<span class="sub">${year}학년도 문서에서 못 찾았어요 — 아래 지난 교육과정에서 전체를 보세요</span>` : ""}</div></div>
+          <button class="star on" data-cu="${esc(e.name)}">★</button></div>`;
+      }).join("");
+      const q = ($("#cuq")?.value || "").trim();
+      const groups = {};
+      ci.entries.filter((e) => !q || e.name.includes(q) || e.college.includes(q)).forEach((e) => (groups[e.college || "기타"] ||= []).push(e));
+      const gq = ($("#gq")?.value || "").trim();
+      const grows = gd ? (gd.years[gyear] || []).filter((d) => !gq || d.name.includes(gq)) : [];
+      const ggroups = {};
+      grows.forEach((d) => (ggroups[d.college || "기타"] ||= []).push(d));
+      const sel = (id, list, cur, fmt) => `<select id="${id}" style="width:auto;margin:0">${list.map((y) => `<option value="${y}" ${y === cur ? "selected" : ""}>${fmt(y)}</option>`).join("")}</select>`;
+      $("#cuv").innerHTML = `<section class="card"><h2>내 학과 ${sel("cuy", years, year, (y) => `${y}학년도${y === 2026 ? " (올해)" : ""}`)}</h2>
+          ${mine || '<div class="empty">아래 목록에서 ☆를 눌러 학과를 담으면 학년도별 교육과정·로드맵 쪽이 바로 열려요</div>'}
+          <p class="note">입학한 해의 교육과정을 보려면 학년도를 바꿔요. 아이폰은 쪽 번호를 직접 넘겨야 할 수 있어요.</p></section>
+        <input type="search" id="cuq" placeholder="학과 이름 검색" value="${esc(q)}">
+        <section class="card">${Object.entries(groups).map(([col, list]) => `<h2>${esc(col)}</h2>` + list.map((e) => `<div class="row">
+          <a class="grow" href="${esc(ci.pdfUrl)}#page=${e.start}" target="_blank" rel="noopener" style="color:inherit">${esc(e.name)}<div class="sub">2026 · ${pageLabel(e)}</div></a>
+          <button class="star ${picked.has(e.name) ? "on" : ""}" data-cu="${esc(e.name)}">${picked.has(e.name) ? "★" : "☆"}</button></div>`).join("")).join("") || '<div class="empty">없어요</div>'}</section>
+        <section class="card"><h2>입학연도별 졸업소요학점 ${gd ? sel("gy", gyears, gyear, (y) => `${y}학년도 입학`) : ""}</h2>
+          <input type="search" id="gq" placeholder="학과 이름으로 찾기" value="${esc(gq)}">
+          ${Object.entries(ggroups).map(([col, list]) => `<div class="sub" style="margin-top:8px"><b>${esc(col)}</b></div>` + list.map((d) => `<div class="row"><div class="grow">${esc(d.name)}<div class="sub">${gradLine(d)}</div></div></div>`).join("")).join("") || '<div class="empty">없어요</div>'}
+          <p class="note">2009학년도 이전 입학자 — 1998 이전: 졸업 140 · 교양 40 이상(구 공업대학교 34) · 전공 55 이상 / 1999~2000: 졸업 140 · 교양 35~70 · 전공 60 이상 / 2001~2009: 학부(과)별로 달라요.
+            원문: <a href="${GRAD_GUIDE}" target="_blank" rel="noopener">졸업요건 안내자료 (2026. 2.)</a></p></section>
+        <section class="card"><h2>지난 교육과정 문서</h2>${PAST_DOCS.map(([y, t, u]) => `<a class="row" href="${esc(u)}" target="_blank" rel="noopener" style="color:inherit"><div class="grow">${y}학년도 ${esc(t)}</div><span class="sub">PDF ›</span></a>`).join("")}
+          <a class="row" href="https://www.pknu.ac.kr/main/106" target="_blank" rel="noopener" style="color:inherit"><div class="grow">학교 교육과정 페이지 (2026 전자책·전체 PDF)</div><span class="sub">›</span></a></section>`;
+      $("#cuy").onchange = (e) => { year = +e.target.value; draw(); };
+      $("#gy") && ($("#gy").onchange = (e) => { gyear = +e.target.value; draw(); });
+      const keep = (id) => { const el = $(id); el.oninput = () => { draw(); const n = $(id); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }; };
+      keep("#cuq"); keep("#gq");
     };
-    $("#cuq").addEventListener("input", draw);
     $("#cuv").addEventListener("click", (e) => {
       const b = e.target.closest("[data-cu]");
       if (!b) return;
       const s = new Set(store.get("curriculum", []));
       if (!s.delete(b.dataset.cu)) s.add(b.dataset.cu);
-      store.set("curriculum", [...s]); render();
+      store.set("curriculum", [...s]); draw();
     });
     draw();
   },

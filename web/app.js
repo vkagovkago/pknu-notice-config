@@ -573,7 +573,7 @@ routes.more = {
   html() {
     const item = (href, icon, name, sub) => `<a class="row" href="${href}" style="color:inherit"><span>${icon}</span><div class="grow"><div>${name}</div><div class="sub">${sub}</div></div><span class="sub">›</span></a>`;
     return `<section class="card"><h2>학교생활</h2>
-      ${item("#chat", "🤖", "AI 챗봇", "학교생활·앱 사용법 물어보기")}
+      ${window.FIREBASE_CONFIG ? item("#chat", "🤖", "AI 챗봇", "학교생활·앱 사용법 물어보기") : ""}
       ${item("#faq", "❓", "자주 묻는 질문", "휴학·수강신청·장학금 등")}
       ${item("#schedule", "📅", "학사일정", "목록·달력, 캘린더 앱에 넣기")}
       ${item("#shuttle", "🚌", "셔틀버스", "대연 ↔ 용당 시간표")}
@@ -586,13 +586,13 @@ routes.more = {
       ${item("#wizard", "🪄", "시간표 마법사", "안 겹치는 시간표 조합 전부 찾기")}
       ${item("#tasks", "📌", "시험·과제", "과목별 시험·과제 날짜 적어두기")}
       ${item("#credits", "🎓", "학점·졸업 요건", "이수 학점, 평점, 목표 평점, 졸업까지 남은 학점")}
-      ${item("#curriculum", "📖", "교육과정", "내 학과 교육과정 안내서 바로 펴기")}
+      ${item("#curriculum", "📖", "교육과정", "학년도별 안내서 바로 펴기 · 입학연도별 졸업소요학점")}
       ${item("#links", "🔗", "학교 사이트 바로가기", "이루미·강의계획서·자료실 등")}
       </section>
       <section class="card"><h2>설정</h2>
       ${item("#boards", "📌", "관심 게시판", "공지를 모아 볼 게시판 고르기")}
       ${item("#keywords", "🔑", "관심 키워드", "제목에 이 말이 들어간 공지 강조")}
-      ${item("#push", "🔔", "새 공지 알림", "고른 게시판에 새 글이 올라오면 알림")}
+      ${window.FIREBASE_CONFIG?.vapidKey ? item("#push", "🔔", "새 공지 알림", "고른 게시판에 새 글이 올라오면 알림") : ""}
       ${item("#settings", "⚙️", "화면·백업", "테마, 글자 크기, 홈 카드, 백업, 데이터 지우기")}
       ${item("#news", "📰", "변경 내역", "앱에 새로 생긴 기능")}
       ${item("#review", "✍️", "리뷰 남기기", "불편한 점·바라는 기능 보내기")}
@@ -628,7 +628,7 @@ routes.faq = {
     return `<input type="search" id="fq" placeholder="궁금한 것 검색 (예: 휴학, 장학금)">
       <div class="chips">${cats.map((c, i) => `<button class="chip ${i === 0 ? "on" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>
       <section class="card" id="flist"></section>
-      <a class="btn ghost" href="#chat">🤖 찾는 답이 없으면 AI에게 묻기</a>`;
+      ${window.FIREBASE_CONFIG ? '<a class="btn ghost" href="#chat">🤖 찾는 답이 없으면 AI에게 묻기</a>' : ""}`;
   },
   after() {
     let cat = "전체";

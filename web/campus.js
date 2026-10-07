@@ -154,9 +154,10 @@ routes.schedule = {
     const tabs = `<div class="chips"><button class="chip ${mode === "list" ? "on" : ""}" data-sv="list">목록</button><button class="chip ${mode === "cal" ? "on" : ""}" data-sv="cal">달력</button>
       <button class="chip" id="sics">다가오는 일정 캘린더에 넣기</button></div>`;
     if (mode === "list") {
-      const groups = {};
-      events.forEach((e) => (groups[e.start.slice(0, 6)] ||= []).push(e));
-      return tabs + (Object.entries(groups).map(([ym, list]) => `<section class="card"><h2>${+ym.slice(0, 4)}년 ${+ym.slice(4)}월</h2>
+      // 지난 달 일정은 기본으로 접는다(학기 초 일정이 맨 위를 차지해 지금 일정이 안 보였다)
+      const past = store.get("schedPast", false), ym = tk.slice(0, 6), groups = {};
+      events.filter((e) => past || (e.end || e.start).slice(0, 6) >= ym).forEach((e) => (groups[e.start.slice(0, 6)] ||= []).push(e));
+      return tabs + `<button class="chip" id="spast">${past ? "지난 달 일정 숨기기" : "지난 달 일정도 보기"}</button>` + (Object.entries(groups).map(([ym, list]) => `<section class="card"><h2>${+ym.slice(0, 4)}년 ${+ym.slice(4)}월</h2>
         ${list.map((e) => ((e.end || e.start) < tk ? eventRow(e).replace('class="row"', 'class="row" style="opacity:.45"') : eventRow(e))).join("")}</section>`).join("")
         || '<div class="empty">일정이 없어요</div>');
     }
@@ -174,6 +175,7 @@ routes.schedule = {
   },
   after() {
     view.querySelectorAll("[data-sv]").forEach((b) => (b.onclick = () => { store.set("schedView", b.dataset.sv); render(); }));
+    $("#spast") && ($("#spast").onclick = () => { store.set("schedPast", !store.get("schedPast", false)); render(); });
     $("#sics").onclick = () => downloadIcs("부경대 학사일정", upcomingEvents().map((e) => ({ title: e.title, start: e.start, end: e.end })));
     const mv = (n) => { const d = fromKey(calMonth + "01"); d.setMonth(d.getMonth() + n); calMonth = keyOf(d).slice(0, 6); render(); };
     $("#cprev") && ($("#cprev").onclick = () => mv(-1));
