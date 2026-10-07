@@ -238,6 +238,15 @@ def build(year, term):
 
 
 
+# 공개 저장소에 올리는 과목 목록에는 교번(staffNo, 4번째 칸)을 넣지 않는다 — 교수 이름과 함께 두면 개인정보다.
+# 강의계획서 원문을 열 때 앱이 이루미에서 그때 받아 온다(앱 SyllabusReport.withStaffNo, 1.13.2).
+PUBLIC_FIELDS = ["no", "cls", "name", "staff", "college", "dept", "cat", "credit", "method", "kor", "time", "room", "grade", "grad"]
+
+
+def public_rows(rows):
+    return [r[:3] + r[4:] for r in rows]
+
+
 # 과목 목록 파일 하나를 쓴다. 같은 학기 기존 파일보다 크게 줄었으면 덮지 않는다.
 # 정규 학기는 3천 개 안팎, 계절학기는 수십 개라 최소 개수는 5개로 둔다(그보다 적으면 수집 실패).
 def write_courses_to(cdst, term_key, catalog):
@@ -252,14 +261,13 @@ def write_courses_to(cdst, term_key, catalog):
             return
     except (OSError, ValueError):
         pass
+    with_time = sum(1 for r in catalog if r[11])
     with open(cdst, "w", encoding="utf-8") as f:
         json.dump({
             "version": 1, "term": term_key, "generated": date.today().isoformat(),
-            "fields": ["no", "cls", "name", "staffNo", "staff", "college", "dept", "cat", "credit", "method",
-                       "kor", "time", "room", "grade", "grad"],
-            "rows": catalog,
+            "fields": PUBLIC_FIELDS,
+            "rows": public_rows(catalog),
         }, f, ensure_ascii=False, separators=(",", ":"))
-    with_time = sum(1 for r in catalog if r[11])
     print(f"과목 {len(catalog)}개(시간 있는 과목 {with_time}개) → {cdst}")
 
 
@@ -303,8 +311,11 @@ def add_cyber(out_dir):
         term = {v: k for k, v in SEASON_TAG.items()}[tag]
         have = {(r[0], r[1]) for r in d["rows"]}
         add = [c for c in list_courses(int(year), term, "U0001001") if c["cyber"] and (c["no"], c["cls"]) not in have]
-        d["rows"] += [[c["no"], c["cls"], c["name"], c["staff"], c["staffName"], c["college"], c["dept"],
-                       c["cat"], c["credit"], c["method"], c["kor"], "", "", "", c["grad"]] for c in add]
+        rows = [[c["no"], c["cls"], c["name"], c["staff"], c["staffName"], c["college"], c["dept"],
+                 c["cat"], c["credit"], c["method"], c["kor"], "", "", "", c["grad"]] for c in add]
+        d["rows"] = public_rows(d["rows"]) if "staffNo" in d["fields"] else d["rows"]
+        d["rows"] += public_rows(rows)
+        d["fields"] = PUBLIC_FIELDS
         json.dump(d, open(path, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
         print(f"{d['term']}: 인터넷 강의 {len(add)}개 더함", flush=True)
 

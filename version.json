@@ -1,7 +1,7 @@
 {
-  "versionCode": 223,
-  "versionName": "1.13.1",
+  "versionCode": 224,
+  "versionName": "1.13.2",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "에타 시간표 사진으로 채우기가 과목을 더 잘 찾아요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "에타 시간표 사진으로 채우기에서 사진이 Google(Gemini)로 간다는 안내를 먼저 보여줘요. 공개 과목 목록에서 교수 교번을 뺐어요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
