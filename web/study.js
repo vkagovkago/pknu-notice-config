@@ -787,17 +787,18 @@ routes.curriculum = {
       $("#cuv").innerHTML = `<section class="card"><h2>내 학과 ${sel("cuy", years, year, (y) => `${y}학년도${y === 2026 ? " (올해)" : ""}`)}</h2>
           ${mine || '<div class="empty">아래 목록에서 ☆를 눌러 학과를 담으면 학년도별 교육과정·로드맵 쪽이 바로 열려요</div>'}
           <p class="note">입학한 해의 교육과정을 보려면 학년도를 바꿔요. 아이폰은 쪽 번호를 직접 넘겨야 할 수 있어요.</p></section>
-        <input type="search" id="cuq" placeholder="학과 이름 검색" value="${esc(q)}">
-        <section class="card">${Object.entries(groups).map(([col, list]) => `<h2>${esc(col)}</h2>` + list.map((e) => `<div class="row">
-          <a class="grow" href="${esc(ci.pdfUrl)}#page=${e.start}" target="_blank" rel="noopener" style="color:inherit">${esc(e.name)}<div class="sub">2026 · ${pageLabel(e)}</div></a>
-          <button class="star ${picked.has(e.name) ? "on" : ""}" data-cu="${esc(e.name)}">${picked.has(e.name) ? "★" : "☆"}</button></div>`).join("")).join("") || '<div class="empty">없어요</div>'}</section>
         <section class="card"><h2>입학연도별 졸업소요학점 ${gd ? sel("gy", gyears, gyear, (y) => `${y}학년도 입학`) : ""}</h2>
           <input type="search" id="gq" placeholder="학과 이름으로 찾기" value="${esc(gq)}">
           ${Object.entries(ggroups).map(([col, list]) => `<div class="sub" style="margin-top:8px"><b>${esc(col)}</b></div>` + list.map((d) => `<div class="row"><div class="grow">${esc(d.name)}<div class="sub">${gradLine(d)}</div></div></div>`).join("")).join("") || '<div class="empty">없어요</div>'}
           <p class="note">2009학년도 이전 입학자 — 1998 이전: 졸업 140 · 교양 40 이상(구 공업대학교 34) · 전공 55 이상 / 1999~2000: 졸업 140 · 교양 35~70 · 전공 60 이상 / 2001~2009: 학부(과)별로 달라요.
             원문: <a href="${GRAD_GUIDE}" target="_blank" rel="noopener">졸업요건 안내자료 (2026. 2.)</a></p></section>
         <section class="card"><h2>지난 교육과정 문서</h2>${PAST_DOCS.map(([y, t, u]) => `<a class="row" href="${esc(u)}" target="_blank" rel="noopener" style="color:inherit"><div class="grow">${y}학년도 ${esc(t)}</div><span class="sub">PDF ›</span></a>`).join("")}
-          <a class="row" href="https://www.pknu.ac.kr/main/106" target="_blank" rel="noopener" style="color:inherit"><div class="grow">학교 교육과정 페이지 (2026 전자책·전체 PDF)</div><span class="sub">›</span></a></section>`;
+          <a class="row" href="https://www.pknu.ac.kr/main/106" target="_blank" rel="noopener" style="color:inherit"><div class="grow">학교 교육과정 페이지 (2026 전자책·전체 PDF)</div><span class="sub">›</span></a></section>
+        <details class="card" ${!picked.size || q ? "open" : ""}><summary><b>학과 목록 (2026)</b> — ☆로 내 학과 담기</summary>
+        <input type="search" id="cuq" placeholder="학과 이름 검색" value="${esc(q)}">
+        <section>${Object.entries(groups).map(([col, list]) => `<h2>${esc(col)}</h2>` + list.map((e) => `<div class="row">
+          <a class="grow" href="${esc(ci.pdfUrl)}#page=${e.start}" target="_blank" rel="noopener" style="color:inherit">${esc(e.name)}<div class="sub">2026 · ${pageLabel(e)}</div></a>
+          <button class="star ${picked.has(e.name) ? "on" : ""}" data-cu="${esc(e.name)}">${picked.has(e.name) ? "★" : "☆"}</button></div>`).join("")).join("") || '<div class="empty">없어요</div>'}</section></details>`;
       $("#cuy").onchange = (e) => { year = +e.target.value; draw(); };
       $("#gy") && ($("#gy").onchange = (e) => { gyear = +e.target.value; draw(); });
       const keep = (id) => { const el = $(id); el.oninput = () => { draw(); const n = $(id); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }; };
