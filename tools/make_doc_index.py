@@ -24,7 +24,7 @@ def doc_urls():
         except requests.RequestException as e:
             print("목록 실패", page, e, flush=True)
             continue
-        for a, b in re.findall(r'class="uploadPdf"[^>]*data-id="(\d+)"|data-id="(\d+)"[^>]*class="uploadPdf"', h):
+        for a, b in re.findall(r'class="[^"]*uploadPdf[^"]*"[^>]*data-id="(\d+)"|data-id="(\d+)"[^>]*class="[^"]*uploadPdf[^"]*"', h):
             r = requests.post("https://www.pknu.ac.kr/common/getMdaId.do", data={"no": a or b}, headers=UA, timeout=30).json().get("response", "").strip()
             if r.lower().endswith(".pdf"):
                 urls.append("https://www.pknu.ac.kr/upload/" + r)

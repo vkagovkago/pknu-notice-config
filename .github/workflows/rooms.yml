@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests
+      - run: pip install requests pdfplumber
       # 날짜로 학기를 고르고(계절학기면 다음 정규 학기까지 본다), 강의실이 50곳 미만이면 저장하지 않는다
       - run: python tools/make_rooms_json.py auto rooms.json
       - name: 바뀌었으면 올리기

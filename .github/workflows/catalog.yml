@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests
+      - run: pip install requests pdfplumber
       - run: python tools/make_rooms_json.py catalog ${{ inputs.from_year }} courses
         env:
           FORCE: ${{ inputs.force }}

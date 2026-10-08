@@ -102,8 +102,7 @@ def plan_info(year, term, c, attempts=5, timeout=60):
                 value = next((x for x in cells[cells.index(label) + 1:] if x), "")
                 # 값이 비면 다음 칸이 곧바로 다음 라벨이다(원격수업은 강의실이 없다) — 앱과 같은 규칙
                 return "" if value in LABELS else value
-            # 핵심역량: 교양은 "주도적 사고 50% / 융합적 탐색 30% / …", 전공은 "창의적 해결 / 융합적 탐색 / …"(앞이 큰 것)
-            return after("강의시간"), after("강의실"), after("개설학년"), after("핵심역량")
+            return after("강의시간"), after("강의실"), after("개설학년")
         except requests.RequestException:
             time.sleep(3 * (attempt + 1))
     return FAILED
@@ -232,20 +231,23 @@ def build(year, term):
     # 열 순서는 앱(CourseCatalog.kt)과 같다.
     catalog = []
     for c, info in results:
-        t, r, g, comp = ("", "", "", "") if (not info or info is FAILED) else info
+        t, r, g = ("", "", "") if (not info or info is FAILED) else info
         catalog.append([c["no"], c["cls"], c["name"], c["staff"], c["staffName"], c["college"], c["dept"],
-                        c["cat"], c["credit"], c["method"], c["kor"], t, r, g, c["grad"], comp])
+                        c["cat"], c["credit"], c["method"], c["kor"], t, r, g, c["grad"]])
     return rooms, used, catalog
 
 
 
 # 공개 저장소에 올리는 과목 목록에는 교번(staffNo, 4번째 칸)을 넣지 않는다 — 교수 이름과 함께 두면 개인정보다.
 # 강의계획서 원문을 열 때 앱이 이루미에서 그때 받아 온다(앱 SyllabusReport.withStaffNo, 1.13.2).
-PUBLIC_FIELDS = ["no", "cls", "name", "staff", "college", "dept", "cat", "credit", "method", "kor", "time", "room", "grade", "grad", "comp"]
+# area·comp는 강의편람의 균형·필수교양 영역·역량(tools/liberal_arts.py) — 앱·웹 과목 검색의 영역·역량 필터(1.14.0)
+PUBLIC_FIELDS = ["no", "cls", "name", "staff", "college", "dept", "cat", "credit", "method", "kor", "time", "room", "grade", "grad", "area", "comp"]
 
 
 def public_rows(rows):
-    return [r[:3] + r[4:] for r in rows]
+    import liberal_arts
+    table = liberal_arts.table_once()
+    return [r[:3] + r[4:15] + list(liberal_arts.label(table, r[2])) for r in rows]
 
 
 # 과목 목록 파일 하나를 쓴다. 같은 학기 기존 파일보다 크게 줄었으면 덮지 않는다.
