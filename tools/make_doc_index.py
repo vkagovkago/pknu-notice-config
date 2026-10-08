@@ -1,4 +1,4 @@
-# 자료실 PDF의 글자 색인(앱 PdfTextIndex, 문서 안 단어 찾기). 쪽마다 글자 줄과 위치(쪽 크기 비율)를 뽑아
+# 자료실 PDF의 글자 색인(앱 PdfTextIndex, 문서 안 단어 찾기). 쪽마다 낱말과 위치(쪽 크기 비율)를 뽑아
 # docindex/<파일이름>.idx.gz로 둔다. 휴대폰에서 882쪽짜리 PDF를 직접 읽으면 메모리가 모자라서 여기서 미리 한다.
 # 글자가 없는(그림뿐인) 쪽은 비워 두고, 앱이 그 쪽만 기기에서 글자 인식(OCR)한다.
 #   python make_doc_index.py docindex            자료실 문서 + 지난 교육과정·졸업요건 안내자료
@@ -41,7 +41,8 @@ def rows_of(pdf_bytes):
         for i, page in enumerate(pdf.pages):
             w, h = float(page.width), float(page.height)
             try:
-                lines = page.extract_text_lines(return_chars=False)
+                # 낱말 단위로 둔다 — 줄 단위면 표처럼 칸이 벌어진 줄에서 찾은 글자 위치를 못 잡는다(앱이 같은 줄 낱말을 다시 잇는다)
+                lines = page.extract_words(keep_blank_chars=False, use_text_flow=False)
             except Exception as e:  # 깨진 쪽은 비워 둔다(앱이 OCR)
                 print(f"  {i + 1}쪽 실패: {e}", flush=True)
                 lines = []
