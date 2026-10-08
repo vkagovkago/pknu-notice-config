@@ -37,7 +37,7 @@ DAYS = {"월": "MON", "화": "TUE", "수": "WED", "목": "THU", "금": "FRI", "�
 TOKEN = re.compile(r"([월화수목금토일])\s*((?:\d{1,2})(?:\s*,\s*\d{1,2})*)")
 ROOM = re.compile(r"[A-Z]\d{1,2}-[A-Z]?\d{2,4}[A-Za-z]?")
 TL = re.compile(r"<TL[^>]*>([^<]*)</TL>")
-LABELS = {"강의시간", "강의실", "강의형태", "담당교수", "연구실", "상담시간", "연락처", "이메일", "학점-이론-실습"}
+LABELS = {"강의시간", "강의실", "강의형태", "담당교수", "연구실", "상담시간", "연락처", "이메일", "학점-이론-실습", "핵심역량", "인재상", "전공능력", "ESG"}
 
 
 # 리포트 서버는 오래된 암호 방식만 받아서 파이썬 기본 설정(SECLEVEL 2)으로는 연결이 끊긴다.
@@ -102,7 +102,8 @@ def plan_info(year, term, c, attempts=5, timeout=60):
                 value = next((x for x in cells[cells.index(label) + 1:] if x), "")
                 # 값이 비면 다음 칸이 곧바로 다음 라벨이다(원격수업은 강의실이 없다) — 앱과 같은 규칙
                 return "" if value in LABELS else value
-            return after("강의시간"), after("강의실"), after("개설학년")
+            # 핵심역량: 교양은 "주도적 사고 50% / 융합적 탐색 30% / …", 전공은 "창의적 해결 / 융합적 탐색 / …"(앞이 큰 것)
+            return after("강의시간"), after("강의실"), after("개설학년"), after("핵심역량")
         except requests.RequestException:
             time.sleep(3 * (attempt + 1))
     return FAILED
@@ -231,16 +232,16 @@ def build(year, term):
     # 열 순서는 앱(CourseCatalog.kt)과 같다.
     catalog = []
     for c, info in results:
-        t, r, g = ("", "", "") if (not info or info is FAILED) else (info[0], info[1], info[2])
+        t, r, g, comp = ("", "", "", "") if (not info or info is FAILED) else info
         catalog.append([c["no"], c["cls"], c["name"], c["staff"], c["staffName"], c["college"], c["dept"],
-                        c["cat"], c["credit"], c["method"], c["kor"], t, r, g, c["grad"]])
+                        c["cat"], c["credit"], c["method"], c["kor"], t, r, g, c["grad"], comp])
     return rooms, used, catalog
 
 
 
 # 공개 저장소에 올리는 과목 목록에는 교번(staffNo, 4번째 칸)을 넣지 않는다 — 교수 이름과 함께 두면 개인정보다.
 # 강의계획서 원문을 열 때 앱이 이루미에서 그때 받아 온다(앱 SyllabusReport.withStaffNo, 1.13.2).
-PUBLIC_FIELDS = ["no", "cls", "name", "staff", "college", "dept", "cat", "credit", "method", "kor", "time", "room", "grade", "grad"]
+PUBLIC_FIELDS = ["no", "cls", "name", "staff", "college", "dept", "cat", "credit", "method", "kor", "time", "room", "grade", "grad", "comp"]
 
 
 def public_rows(rows):
@@ -302,28 +303,7 @@ def build_catalogs(from_year, out_dir):
             write_courses_to(path, key, catalog)
 
 
-# 이미 만든 학기 파일에 인터넷 강의 줄만 더한다(강의계획서는 안 받으므로 금방 끝난다).
-def add_cyber(out_dir):
-    import os, glob
-    for path in sorted(glob.glob(os.path.join(out_dir, "*.json"))):
-        d = json.load(open(path, encoding="utf-8"))
-        year, tag = d["term"].split("-")
-        term = {v: k for k, v in SEASON_TAG.items()}[tag]
-        have = {(r[0], r[1]) for r in d["rows"]}
-        add = [c for c in list_courses(int(year), term, "U0001001") if c["cyber"] and (c["no"], c["cls"]) not in have]
-        rows = [[c["no"], c["cls"], c["name"], c["staff"], c["staffName"], c["college"], c["dept"],
-                 c["cat"], c["credit"], c["method"], c["kor"], "", "", "", c["grad"]] for c in add]
-        d["rows"] = public_rows(d["rows"]) if "staffNo" in d["fields"] else d["rows"]
-        d["rows"] += public_rows(rows)
-        d["fields"] = PUBLIC_FIELDS
-        json.dump(d, open(path, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
-        print(f"{d['term']}: 인터넷 강의 {len(add)}개 더함", flush=True)
-
-
 def main():
-    if sys.argv[1] == "add_cyber":
-        add_cyber(sys.argv[2])
-        return
     # python make_rooms_json.py 2026 U0003002 rooms.json   (학기를 직접 고름)
     # python make_rooms_json.py auto rooms.json            (날짜로 학기를 고름 — GitHub Actions용)
     if sys.argv[1] == "catalog":
