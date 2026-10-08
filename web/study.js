@@ -37,6 +37,10 @@ function describeTime(c) {
   return blocks.map((b) => `${DAYS[b.day]} ${b.periods.join(",")}교시 (${runsOf(b.periods).map(([a, z]) => `${hm(540 + (a - 1) * g.gap)}~${hm(540 + (z - 1) * g.gap + g.len)}`).join(", ")})`).join(" · ");
 }
 
+// 강의편람의 교양 역량·영역(과목 목록 area·comp 칸, 균형·필수교양) — 앱 Competency
+const COMPETENCIES = ["주도적 사고", "융합적 탐색", "창의적 해결", "소통형 리더십", "글로벌 감각", "사회적 기여"];
+const AREAS = ["인간문화", "사회역사", "자연과학기술"];
+
 function makeCourse(o) {
   const nums = o.credit.split("-").map((x) => x.trim()).filter((x) => /^\d+$/.test(x)).map(Number);
   const point = parseFloat(o.credit.split("-")[0]);
@@ -59,7 +63,7 @@ async function catalog(term) {
   return (catCache[term] = raw.rows.map((r) => makeCourse({
     term, no: s(r, "no"), cls: s(r, "cls"), name: s(r, "name"), staff: s(r, "staff"), college: s(r, "college"), dept: s(r, "dept"),
     cat: s(r, "cat"), credit: s(r, "credit"), method: s(r, "method"), time: s(r, "time"), room: s(r, "room"),
-    grade: s(r, "grade"), grad: s(r, "grad") === "1", key: `${y}|${SEASON_CODE[t]}|${s(r, "no")}|${s(r, "cls")}`,
+    grade: s(r, "grade"), grad: s(r, "grad") === "1", area: s(r, "area"), comp: s(r, "comp"), key: `${y}|${SEASON_CODE[t]}|${s(r, "no")}|${s(r, "cls")}`,
   })).filter((c) => c.no));
 }
 
@@ -82,7 +86,7 @@ function conflictsWith(c, term) {
 }
 
 // ================= 과목 검색 =================
-const sq = { text: "", field: "name", college: "", dept: "", grade: "", cat: "", credit: "", sort: "", free: false, grad: false };
+const sq = { text: "", field: "name", college: "", dept: "", grade: "", cat: "", credit: "", area: "", comp: "", sort: "", free: false, grad: false };
 let results = [];
 const CYBER = "@cyber";
 routes.search = {
@@ -98,6 +102,8 @@ routes.search = {
         <select id="scat"></select></div>
       <div class="grid2"><select id="scr">${[["", "전체 학점"], ["1", "1학점"], ["2", "2학점"], ["3", "3학점"], ["4+", "4학점 이상"]].map(([v, l]) => opt(v, l, sq.credit)).join("")}</select>
         <select id="sso">${[["", "기본 순"], ["code", "과목코드 순"], ["name", "과목명 순"]].map(([v, l]) => opt(v, l, sq.sort)).join("")}</select></div>
+      <div class="grid2"><select id="sarea">${[["", "전체 영역(교양)"], ...AREAS.map((x) => [x, x])].map(([v, l]) => opt(v, l, sq.area)).join("")}</select>
+        <select id="scomp">${[["", "전체 역량(교양)"], ...COMPETENCIES.map((x) => [x, x])].map(([v, l]) => opt(v, l, sq.comp)).join("")}</select></div>
       <label class="check"><input type="checkbox" id="sfree" ${sq.free ? "checked" : ""}> 내 시간표와 안 겹치는 과목만</label>
       <label class="check"><input type="checkbox" id="sgrad" ${sq.grad ? "checked" : ""}> 대학원 과목 보기</label>
       <section class="card list" id="slist"><div class="empty">과목 목록 불러오는 중…</div></section>`;
@@ -124,6 +130,7 @@ routes.search = {
       results = items.filter((c) => (sq.college === CYBER ? c.cyber : c.grad === sq.grad
         && (!sq.college || c.college === sq.college) && (!sq.dept || c.dept === sq.dept))
         && (!sq.grade || c.grades.includes(sq.grade)) && (!sq.cat || c.cat === sq.cat) && (!sq.credit || c.creditTok === sq.credit)
+        && (!sq.comp || c.comp === sq.comp) && (!sq.area || c.area === sq.area)
         && (!t || (sq.field === "name" ? norm(c.name).includes(t) : sq.field === "staff" ? norm(c.staff).includes(t)
           : sq.field === "room" ? norm(c.room).includes(t) : `${c.no}-${c.cls}`.includes(t)))
         && (!sq.free || (c.slots.length && !conflictsWith(c, term).length)));
@@ -137,6 +144,7 @@ routes.search = {
           return `<div class="row"><div class="grow" data-ci="${i}"><div class="t"><b>${esc(c.name)}</b> <span class="sub">${esc(c.cls)}분반</span></div>
             <div class="sub">${esc(c.cyber ? `${c.cyber} 학점교류` : c.staff || "교수 미정")} · ${esc(c.cat)} · ${c.point == null ? "?" : fmtNum(c.point)}학점 · ${esc(c.method)}${c.grade ? " · " + esc(c.grade) + (/^\d/.test(c.grade) ? "학년" : "") : ""}</div>
             <div class="sub">${esc(describeTime(c))}${c.room ? " · " + esc(c.room) : ""}</div>
+            ${c.comp ? `<div class="sub" style="color:var(--primary)">${esc([c.area, c.comp].filter(Boolean).join(" · "))}</div>` : ""}
             ${clash.length ? `<div class="sub" style="color:var(--red)">⚠ ${esc(clash.join(", "))}와(과) 겹쳐요</div>` : ""}</div>
             <button class="btn small ${on ? "ghost" : ""}" data-add="${i}">${wizKeys ? (on ? "후보 ✓" : "후보로") : on ? "담음" : "담기"}</button></div>`;
         }).join("");
@@ -145,7 +153,7 @@ routes.search = {
     $("#sq").addEventListener("input", () => { sq.text = $("#sq").value; clearTimeout(timer); timer = setTimeout(draw, 150); });
     const bind = (id, k, fn) => $(id).addEventListener("change", (e) => { sq[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; fn?.(); draw(); });
     bind("#sf", "field"); bind("#scol", "college", () => { sq.dept = ""; fillDepts(); }); bind("#sdep", "dept");
-    bind("#sgr", "grade"); bind("#scat", "cat"); bind("#scr", "credit"); bind("#sso", "sort"); bind("#sfree", "free"); bind("#sgrad", "grad");
+    bind("#sgr", "grade"); bind("#scat", "cat"); bind("#scr", "credit"); bind("#scomp", "comp"); bind("#sarea", "area"); bind("#sso", "sort"); bind("#sfree", "free"); bind("#sgrad", "grad");
     $("#slist").addEventListener("click", (e) => {
       const b = e.target.closest("[data-add]"), row = e.target.closest("[data-ci]");
       if (b) {
@@ -173,7 +181,7 @@ function courseDialog(c, term, onChange) {
   const row = (k, v) => (v ? `<div class="row"><span class="sub" style="width:72px">${k}</span><div class="grow">${v}</div></div>` : "");
   d.innerHTML = `<div><h3>${esc(c.name)} <span class="sub">${esc(c.cls)}분반</span></h3>
     ${row("교수", c.cyber ? "" : esc(c.staff))}${row("강의시간", esc(describeTime(c)))}${row("강의실", esc(c.room))}
-    ${row("이수구분", esc(c.cat))}${row("학점-이론-실습", esc(c.credit))}${row("강의형태", esc(c.method))}
+    ${row("이수구분", esc(c.cat))}${row("영역·역량", esc([c.area, c.comp].filter(Boolean).join(" · ")))}${row("학점-이론-실습", esc(c.credit))}${row("강의형태", esc(c.method))}
     ${row("개설학과", esc([c.college, c.dept].filter(Boolean).join(" · ")))}${row("학년", esc(c.grade))}${row("과목코드", `${esc(c.no)}-${esc(c.cls)}`)}
     ${row("영어강의", c.kor === "N" ? "예" : "")}
     ${clash.length ? `<p class="sub" style="color:var(--red)">⚠ ${esc(clash.join(", "))}와(과) 시간이 겹쳐요</p>` : ""}
