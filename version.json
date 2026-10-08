@@ -1,7 +1,7 @@
 {
-  "versionCode": 225,
-  "versionName": "1.14.0",
+  "versionCode": 226,
+  "versionName": "1.14.1",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "과목 검색에서 교양 영역·역량(강의편람 기준)으로 찾을 수 있어요. 자료실 문서 단어 찾기도 더 정확해졌어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "자료실 문서 단어 찾기가 다시 말 중간 글자도 찾아요. 과목 검색 교양 영역·역량 필터(강의편람 기준)도 있어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
