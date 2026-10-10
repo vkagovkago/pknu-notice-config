@@ -1,9 +1,10 @@
 # 자료실 PDF의 글자 색인(앱 PdfTextIndex, 문서 안 단어 찾기). 쪽마다 낱말과 위치(쪽 크기 비율)를 뽑아
 # docindex/<파일이름>.idx.gz로 둔다. 휴대폰에서 882쪽짜리 PDF를 직접 읽으면 메모리가 모자라서 여기서 미리 한다.
-# 글자가 거의 없는(그림뿐인) 쪽은 여기서 그림으로 그려 글자 인식(OCR, tesseract 한국어)을 한다 — 웹앱도 찾을 수 있게,
-# 앱은 휴대폰에서 1분씩 읽지 않게. OCR을 못 하는 환경이면(tesseract 없음) 그 쪽은 비워 두고 앱이 기기에서 한다.
+# 글자가 거의 없는(그림뿐인) 쪽은 그림으로 그려 글자 인식(OCR, tesseract 한국어)을 해서 웹앱용
+# docindex/<파일이름>.ocr.gz에 따로 둔다. 앱 색인(.idx.gz)에는 넣지 않는다 — 앱은 그 쪽을 휴대폰 ML Kit로 읽는데
+# 그쪽이 tesseract보다 한국어를 훨씬 잘 읽는다(같이 넣으면 앱이 덜 정확한 글자를 쓰게 된다).
 #   python make_doc_index.py docindex            자료실 문서 + 지난 교육과정·졸업요건 안내자료
-# 이미 만든 색인은 PDF 크기가 같으면 건너뛴다(FORCE=1이면 다시).
+# 이미 만든 색인은 PDF 크기가 같으면 건너뛴다(FORCE=1이면 다시). docs.json(웹앱 자료실 목록)도 만든다.
 import gzip, io, json, os, re, sys
 import pdfplumber, requests
 from bs4 import BeautifulSoup
@@ -11,33 +12,11 @@ from bs4 import BeautifulSoup
 try:
     import pytesseract
     pytesseract.get_tesseract_version()
-except Exception:  # 내 PC처럼 tesseract가 없으면 OCR 없이(예전처럼) 만든다
+except Exception:  # 내 PC처럼 tesseract가 없으면 OCR 없이 만든다
     pytesseract = None
 
-# 색인 둘째 줄의 표시. 이게 있어야 "그림 쪽까지 OCR한 색인"이다 — 없으면 PDF가 그대로여도 다시 만든다.
-# 앱(PdfTextIndex)과 웹앱은 칸이 6개가 안 되는 줄을 건너뛰므로 이 줄을 무시한다.
-OCR_MARK = "#ocr1"
 # 앱 PdfTextIndex와 같은 기준: 쪽 글자가 이보다 적으면 그림으로 본다
 MIN_TEXT = 20
-
-
-# 쪽을 그림으로 그려(200dpi) 낱말과 위치를 읽는다. 앱의 ML Kit 결과와 같은 모양(쪽 크기 비율)으로.
-def ocr_words(page, i):
-    img = page.to_image(resolution=200).original
-    width, height = img.size
-    d = pytesseract.image_to_data(img, lang="kor+eng", output_type=pytesseract.Output.DICT)
-    out = []
-    for k, t in enumerate(d["text"]):
-        t = re.sub(r"\s+", " ", t or "").strip()
-        try:
-            conf = float(d["conf"][k])
-        except (TypeError, ValueError):
-            conf = -1
-        if not t or conf < 40:  # 알아보기 힘든 조각은 버린다(찾을 때 엉뚱한 쪽이 걸리지 않게)
-            continue
-        x, y, w, h = d["left"][k], d["top"][k], d["width"][k], d["height"][k]
-        out.append(f"{i}\t{x / width:.4f}\t{y / height:.4f}\t{w / width:.4f}\t{h / height:.4f}\t{t}")
-    return out
 
 UA = {"User-Agent": "Mozilla/5.0 (pknu-notice docindex)"}
 # (분류, 페이지, 최근 학년도만) — 앱 CampusDocRepository.SOURCES와 같다
@@ -110,8 +89,32 @@ def doc_urls(docs):
     return list(dict.fromkeys(urls + EXTRA))
 
 
-def rows_of(pdf_bytes):
+def row(i, x, y, w, h, t):
+    return f"{i}\t{x:.4f}\t{y:.4f}\t{w:.4f}\t{h:.4f}\t{t}"
+
+
+# 쪽을 그림으로 그려(300dpi, 흑백) 낱말과 위치를 읽는다. 색인과 같은 모양(쪽 크기 비율)으로.
+def ocr_words(page, i):
+    img = page.to_image(resolution=300).original.convert("L")
+    width, height = img.size
+    d = pytesseract.image_to_data(img, lang="kor+eng", output_type=pytesseract.Output.DICT)
     out = []
+    for k, t in enumerate(d["text"]):
+        t = re.sub(r"\s+", " ", t or "").strip()
+        try:
+            conf = float(d["conf"][k])
+        except (TypeError, ValueError):
+            conf = -1
+        # 알아보기 힘든 조각·글자 아닌 부스러기(ㆍ, eee)는 버린다 — 찾을 때 엉뚱한 쪽이 걸리지 않게
+        if not t or conf < 50 or not re.search(r"[가-힣]|[A-Za-z0-9]{2}", t):
+            continue
+        out.append(row(i, d["left"][k] / width, d["top"][k] / height, d["width"][k] / width, d["height"][k] / height, t))
+    return out
+
+
+# (앱 색인 줄, 웹앱 OCR 줄). OCR은 tesseract가 있고 ocr=True일 때만.
+def rows_of(pdf_bytes, ocr):
+    out, ocr_out = [], []
     with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
         for i, page in enumerate(pdf.pages):
             w, h = float(page.width), float(page.height)
@@ -121,30 +124,44 @@ def rows_of(pdf_bytes):
             except Exception as e:  # 깨진 쪽은 비워 둔다(앱이 OCR)
                 print(f"  {i + 1}쪽 실패: {e}", flush=True)
                 lines = []
-            words = []
+            texts = []
             for l in lines:
                 t = re.sub(r"\s+", " ", l["text"]).strip()
                 if not t:
                     continue
-                words.append(f"{i}\t{l['x0'] / w:.4f}\t{l['top'] / h:.4f}\t{(l['x1'] - l['x0']) / w:.4f}\t{(l['bottom'] - l['top']) / h:.4f}\t{t}")
-            if pytesseract and sum(len(x.rsplit("\t", 1)[-1]) for x in words) < MIN_TEXT:
+                texts.append(t)
+                out.append(row(i, l["x0"] / w, l["top"] / h, (l["x1"] - l["x0"]) / w, (l["bottom"] - l["top"]) / h, t))
+            if ocr and sum(len(t) for t in texts) < MIN_TEXT:
                 try:
                     got = ocr_words(page, i)
-                    if got:
-                        words = got
-                        print(f"  {i + 1}쪽 OCR 낱말 {len(got)}", flush=True)
+                    ocr_out += got
+                    print(f"  {i + 1}쪽 OCR 낱말 {len(got)}", flush=True)
                 except Exception as e:
                     print(f"  {i + 1}쪽 OCR 실패: {e}", flush=True)
-            out += words
             page.flush_cache()
-    return out
+    return out, ocr_out
+
+
+def first_lines(path, n=2):
+    if not os.path.exists(path):
+        return []
+    with gzip.open(path, "rt", encoding="utf-8") as f:
+        return [f.readline().strip() for _ in range(n)]
+
+
+# 첫 줄은 PDF 크기 — 앱이 받아둔 파일과 크기가 다르면(학교가 바꿈) 이 색인을 안 쓴다
+def write_gz(path, size, rows):
+    with gzip.open(path, "wt", encoding="utf-8", newline="\n", compresslevel=9) as f:
+        f.write(size + "\n" + "".join(r + "\n" for r in rows))
 
 
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
     docs = titled_docs()
+    force = os.environ.get("FORCE") == "1"
     for url in doc_urls(docs):
         path = os.path.join(out_dir, file_name(url) + ".idx.gz")
+        ocr_path = os.path.join(out_dir, file_name(url) + ".ocr.gz")
         try:
             r = requests.get(url, headers=UA, timeout=600)
             r.raise_for_status()
@@ -152,30 +169,31 @@ def main(out_dir):
             print("받기 실패", url, e, flush=True)
             continue
         size = str(len(r.content))
-        if os.path.exists(path) and os.environ.get("FORCE") != "1":
-            with gzip.open(path, "rt", encoding="utf-8") as f:
-                same = f.readline().strip() == size
-                marked = f.readline().strip() == OCR_MARK
-            # OCR을 못 하는 환경에서는 표시 없이도 그대로 둔다(OCR 색인을 OCR 없는 색인으로 덮지 않게)
-            if same and (marked or not pytesseract):
-                print("그대로", url, flush=True)
-                continue
-        rows = rows_of(r.content)
-        # 첫 줄은 PDF 크기 — 앱이 받아둔 파일과 크기가 다르면(학교가 바꿈) 이 색인을 안 쓴다
-        with gzip.open(path, "wt", encoding="utf-8", newline="\n", compresslevel=9) as f:
-            f.write(size + "\n" + (OCR_MARK + "\n" if pytesseract else "") + "\n".join(rows) + "\n")
-        print(f"{url} → {path} 줄 {len(rows)}, {os.path.getsize(path) // 1024}KB", flush=True)
+        head = first_lines(path)
+        # 잠깐 OCR 줄이 앱 색인에 섞여 들어간 적이 있다(둘째 줄 "#ocr1") — 그런 색인은 다시 만든다
+        idx_ok = not force and head[:1] == [size] and head[1:2] != ["#ocr1"]
+        # OCR 파일은 그림 쪽이 없어도 크기 줄만 써 둔다 — "이 크기의 PDF는 OCR까지 봤다"는 표시
+        ocr_ok = not pytesseract or (not force and first_lines(ocr_path, 1) == [size])
+        if idx_ok and ocr_ok:
+            print("그대로", url, flush=True)
+            continue
+        rows, ocr_rows = rows_of(r.content, ocr=not ocr_ok)
+        if not idx_ok:
+            write_gz(path, size, rows)
+        if not ocr_ok:
+            write_gz(ocr_path, size, ocr_rows)
+        print(f"{url} → 줄 {len(rows)}, OCR 줄 {len(ocr_rows)}", flush=True)
 
-
-    # 웹앱 자료실 목록: 쪽 수는 색인의 마지막 쪽 번호로(색인이 없으면 0)
+    # 웹앱 자료실 목록: 쪽 수는 색인(+OCR)의 마지막 쪽 번호로(글자가 하나도 없으면 0)
     for d in docs:
-        path = os.path.join(out_dir, d["file"] + ".idx.gz")
-        pages = 0
-        if os.path.exists(path):
-            with gzip.open(path, "rt", encoding="utf-8") as f:
-                next(f, None)
-                pages = 1 + max((int(l.split("\t", 1)[0]) for l in f if l[:1].isdigit()), default=-1)
-        d["pages"] = pages
+        last = -1
+        for ext in (".idx.gz", ".ocr.gz"):
+            p = os.path.join(out_dir, d["file"] + ext)
+            if os.path.exists(p):
+                with gzip.open(p, "rt", encoding="utf-8") as f:
+                    next(f, None)
+                    last = max([last] + [int(l.split("\t", 1)[0]) for l in f if l[:1].isdigit()])
+        d["pages"] = last + 1
     with open(os.path.join(out_dir, "docs.json"), "w", encoding="utf-8") as f:
         json.dump(docs, f, ensure_ascii=False, indent=1)
     print(f"docs.json 문서 {len(docs)}개", flush=True)

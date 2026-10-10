@@ -207,20 +207,25 @@ routes.links = {
 
 // ================= 자료실 문서 (앱 자료실 + PdfTextIndex 단어 찾기) =================
 // 목록·글자 색인은 매주 Actions가 만든다(tools/make_doc_index.py → docindex/docs.json, <파일>.idx.gz).
+// 그림뿐인 쪽은 서버 글자 인식(tesseract) 결과가 <파일>.ocr.gz에 따로 있다 — 같이 읽는다.
 // 색인 한 줄: "쪽\tx\ty\tw\th\t낱말"(첫 줄은 PDF 크기). 같은 줄 낱말을 다시 이어 붙여 찾는다 — 앱과 같은 규칙.
 const docIdx = {};
-async function docIndex(file) {
-  if (docIdx[file]) return docIdx[file];
-  const r = await fetch(`data/docindex/${enc(file)}.idx.gz`);
-  if (!r.ok) throw new Error("색인 없음");
+async function gzText(url) {
+  const r = await fetch(url);
+  if (!r.ok) return null;
   const buf = new Uint8Array(await r.arrayBuffer());
   // 서버가 gzip을 풀어서 주는 경우도 있어 앞 두 바이트(1f 8b)로 가른다
-  const text = buf[0] === 0x1f && buf[1] === 0x8b
+  return buf[0] === 0x1f && buf[1] === 0x8b
     ? await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text()
     : new TextDecoder().decode(buf);
+}
+async function docIndex(file) {
+  if (docIdx[file]) return docIdx[file];
+  const [idx, ocr] = await Promise.all([gzText(`data/docindex/${enc(file)}.idx.gz`), gzText(`data/docindex/${enc(file)}.ocr.gz`)]);
+  if (idx == null && ocr == null) throw new Error("색인 없음");
   const pages = new Map();
   // 윈도에서 만든 색인은 줄 끝이 \r\n이다
-  text.split(/\r?\n/).slice(1).forEach((l) => {
+  [idx, ocr].filter(Boolean).flatMap((text) => text.split(/\r?\n/).slice(1)).forEach((l) => {
     const f = l.split("\t");
     if (f.length < 6) return;
     const p = +f[0];
@@ -280,7 +285,7 @@ routes.docs = {
         <form id="daf" class="chatbar" style="position:static;padding:0"><input type="search" id="daq" placeholder="예: 졸업 학점, 휴학, 수강신청"><button class="btn" style="white-space:nowrap">찾기</button></form>
         <div id="dar"></div></section>` : "")
       + groups.map((g) => `<section class="card"><h2>${esc(g)}</h2>${docs.filter((d) => d.desc === g).map((d) => `<a class="row" href="#docs/${enc(d.file)}" style="color:inherit">
-          <div class="grow">${esc(d.title)}<div class="sub">${d.pages ? `${d.pages}쪽 · 단어 찾기` : "그림으로 된 문서 · PDF로 보기"}</div></div><span class="sub">›</span></a>`).join("")}</section>`).join("")
+          <div class="grow">${esc(d.title)}<div class="sub">${d.pages ? `${d.pages}쪽 · 단어 찾기` : "글자를 읽지 못한 문서 · PDF로 보기"}</div></div><span class="sub">›</span></a>`).join("")}</section>`).join("")
       + (docs.length ? "" : '<div class="empty">문서 목록을 아직 받지 못했어요.</div>')
       + '<p class="note">학교 홈페이지 자료실(교육과정·대학생활 가이드·강의편람·비교과)의 PDF예요. 목록과 글자 색인은 매주 새로 만들어요.</p>';
     $("#daf")?.addEventListener("submit", async (e) => {
@@ -309,7 +314,7 @@ async function docPage(doc) {
   $("#title").textContent = doc.title;
   $("#dv").innerHTML = `<section class="card"><div class="btns"><a class="btn" href="${esc(doc.url)}" target="_blank" rel="noopener">PDF 열기${doc.pages ? ` (${doc.pages}쪽)` : ""}</a></div>
       ${doc.pages ? `<form id="df" class="chatbar" style="position:static;padding:0;margin-top:10px"><input type="search" id="dq" placeholder="문서에서 찾을 말"><button class="btn" style="white-space:nowrap">찾기</button></form>`
-        : '<p class="note">그림으로만 된 문서라 웹에서는 단어를 찾을 수 없어요(안드로이드 앱은 글자 인식으로 찾아요).</p>'}</section>
+        : '<p class="note">이 문서는 글자를 읽지 못해 웹에서는 단어를 찾을 수 없어요.</p>'}</section>
     <div id="dr"></div>`;
   $("#df")?.addEventListener("submit", async (e) => {
     e.preventDefault();
