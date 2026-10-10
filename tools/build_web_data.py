@@ -212,16 +212,91 @@ def finalize(items):
     return sorted(by_no.values(), key=lambda i: (i["pinned"], i["date"], i["no"]), reverse=True)
 
 
+# 학과 사무실 전화번호(앱 DeptContactRepository). 공지 목록을 받는 같은 페이지(대개 푸터)에서 뽑는다 — 따로 요청하지 않는다.
+# 이메일은 뽑지 않는다(정보통신망법 제50조의2, 학교 "이메일무단수집금지").
+TEL_FULL = re.compile(r"(?<!\d)0(?:2|[3-6]\d|70|10|80)\s*[-.)]\s*\d{3,4}\s*[-.]\s*\d{4}(?!\d)")
+TEL_EXT = re.compile(r"(?<![\d)\-.])629\s*[-.]\s*\d{4}(?!\d)")  # 지역번호 없이 내선만(629는 학교 국번)
+TEL_IGNORED = {"051-629-4114", "051-629-5119", "051-629-6040"}  # 대표·팩스
+FAX_LABEL = re.compile(r"(?i)(fax|팩스)[^0-9]{0,6}$")
+
+
+def tel_norm(raw):
+    d = re.sub(r"\D", "", raw)
+    if len(d) == 7:
+        return f"051-{d[:3]}-{d[3:]}"
+    if len(d) == 10:
+        return f"{d[:3]}-{d[3:6]}-{d[6:]}"
+    if len(d) == 11:
+        return f"{d[:3]}-{d[3:7]}-{d[7:]}"
+    return raw.strip()
+
+
+def tels_of(doc):
+    text = doc.body.get_text(" ") if doc.body else ""
+    found = sorted(list(TEL_FULL.finditer(text)) + list(TEL_EXT.finditer(text)), key=lambda m: m.start())
+    out = []
+    for m in found:
+        if FAX_LABEL.search(text[max(0, m.start() - 10):m.start()]):
+            continue
+        t = tel_norm(m.group(0))
+        if t not in TEL_IGNORED and t not in out:
+            out.append(t)
+    return out[:3]
+
+
 def fetch_board(b):
     try:
         doc, base = get_doc(b["url"])
+        tels = tels_of(doc)
         for parse in PARSERS:
             items = parse(doc, b, base)
             if items:
-                return b, finalize(items)[:30], None
-        return b, [], "목록을 읽지 못했어요"
+                return b, finalize(items)[:30], None, tels
+        return b, [], "목록을 읽지 못했어요", tels
     except Exception as e:  # 한 게시판이 죽어도 나머지는 만든다
-        return b, None, type(e).__name__
+        return b, None, type(e).__name__, []
+
+
+# 자유전공학부가 자기 게시판에 옮겨 올리는 학사공지(앱 AcademicSupplement). 그중 본 학사공지에 없는 글만
+# 학사공지 목록에 얹는다. 같은 글인지는 제목의 글자 2-gram 겹침(60% 이상)으로 본다 — 앱과 같은 규칙.
+SUPPLEMENT = {"id": "academic_supplement", "college": "본부", "name": "자유전공학부 학사공지", "url": "https://icms.pknu.ac.kr/liberal/7521"}
+SUPPLEMENT_NO_OFFSET = 1_000_000_000  # 읽음 표시 키(게시판|글번호)가 학사공지 글번호와 겹치지 않게(앱과 같다)
+DECORATIVE = "★☆♥▶◀#~•·※!?\"'“”‘’:;.,_/-"
+
+
+def norm_title(t):
+    t = re.sub(r"\[[^\]]*]", "", t)
+    t = re.sub(r"\([^)]*\)", "", t)
+    t = "".join(c for c in t if c not in DECORATIVE)
+    return re.sub(r"\s+", "", t)
+
+
+def bigrams(t):
+    return {t[i:i + 2] for i in range(len(t) - 1)}
+
+
+def similar(a, b):
+    ga, gb = bigrams(a), bigrams(b)
+    if not ga or not gb:
+        return a == b
+    return len(ga & gb) / len(ga | gb) >= 0.6
+
+
+def supplement_missing(academic, dept, supp):
+    known = [norm_title(i["title"]) for i in academic + dept]
+    known = [k for k in known if k]
+    if not known:  # 비교할 게 없으면 얹지 않는다(학사공지 글이 전부 중복으로 깔린다)
+        return []
+    # 웹은 학사공지 첫 쪽만 받는다 — 그보다 오래된 자유전공 글은 비교 대상이 없어 새 글로 잘못 보이므로 뺀다
+    floor = min((i["date"] for i in academic if not i["pinned"] and i["date"]), default="")
+    out = []
+    for i in supp:
+        if i["pinned"] or (floor and i["date"] and i["date"] < floor):
+            continue
+        n = norm_title(i["title"])
+        if not any(similar(n, k) for k in known):
+            out.append({**i, "no": i["no"] + SUPPLEMENT_NO_OFFSET})
+    return out
 
 
 def build_notices(prev):
@@ -229,13 +304,24 @@ def build_notices(prev):
     with ThreadPoolExecutor(8) as pool:
         results = list(pool.map(fetch_board, boards))
     out = {}
-    for b, items, err in results:
+    for b, items, err, tels in results:
         old = prev.get(b["id"], {})
         # 받기에 실패하면 지난번 목록을 그대로 둔다(빈 목록으로 덮으면 웹앱에서 공지가 사라진다)
         out[b["id"]] = dict(name=b["name"], college=b["college"], url=b["url"],
                             items=items if items is not None else old.get("items", []),
-                            error=err)
-    ok = sum(1 for _, items, _ in results if items)
+                            error=err,
+                            # 전화번호도 못 뽑았으면 지난번 것. 학과가 아닌 게시판(진로·취업의 채용 등)은 빼 둔다
+                            tels=(tels or old.get("tels", [])) if b.get("hasDeptOffice", True) else [])
+    # 자유전공학부 학사공지 중 빠진 글을 학사공지에 얹는다(실패하면 그냥 둔다)
+    try:
+        _, supp, _, _ = fetch_board(SUPPLEMENT)
+        extra = supplement_missing(out["academic"]["items"], out.get("본부자유전공학부", {}).get("items", []), supp or [])
+        if extra:
+            out["academic"]["items"] = sorted(out["academic"]["items"] + extra, key=lambda i: (i["pinned"], i["date"], i["no"]), reverse=True)
+            print(f"자유전공학부 학사공지 {len(extra)}건을 학사공지에 얹음")
+    except Exception as e:
+        print("자유전공학부 학사공지", e)
+    ok = sum(1 for _, items, _, _ in results if items)
     return out, ok, len(boards)
 
 

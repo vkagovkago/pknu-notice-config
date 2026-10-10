@@ -71,7 +71,8 @@ function toast(msg) {
 const myBoards = () => store.get("boards", ["academic"]);
 function noticesOf(ids) {
   const boards = data.notices?.boards || {};
-  return ids.flatMap((id) => (boards[id]?.items || []).map((n) => ({ ...n, board: boards[id].name, boardId: id })));
+  return ids.flatMap((id) => (boards[id]?.items || []).map((n) => ({ ...n, board: boards[id].name, boardId: id })))
+    .filter((n) => !isExcluded(n.title));
 }
 const byNewest = (a, b) => (b.date || "").localeCompare(a.date || "") || b.no - a.no;
 const bmKey = (n) => `${n.boardId}|${n.no}`;
@@ -84,6 +85,9 @@ function markRead(k) {
 }
 const keywords = () => store.get("keywords", []);
 const hasKeyword = (t) => keywords().some((k) => k && t.includes(k));
+// 제외 키워드(앱 KeywordPrefs 제외): 제목에 이 말이 든 공지는 목록·홈에서 뺀다
+const excludes = () => store.get("excludes", []);
+const isExcluded = (t) => excludes().some((k) => k && t.includes(k));
 function highlight(title) {
   let t = esc(title);
   keywords().forEach((k) => { if (k) t = t.split(esc(k)).join(`<mark>${esc(k)}</mark>`); });
@@ -201,6 +205,9 @@ routes.home = {
     const events = upcomingEvents().slice(0, 4);
     const notices = noticesOf(myBoards()).filter((n) => !n.pinned).sort(byNewest).slice(0, 6);
     const exam = examLine();
+    const gap = hol ? null : gapMinutes(today, minute);
+    const fav = favToday();
+    const week = weekSummary();
     const soon = upcomingTasks(7).slice(0, 3);
     const reg = courseRegEvent();
     const hidden = new Set(store.get("homeHidden", []));
@@ -210,10 +217,13 @@ routes.home = {
       ${!window.FIREBASE_CONFIG ? "" : show("chat", '<a class="card banner" href="#chat">🤖 <b>AI 챗봇</b>에게 학교생활 물어보기 ›</a>')}
       <section class="card"><h2>오늘 · ${now.getMonth() + 1}월 ${now.getDate()}일 (${DAYS[di]})</h2>
         <div class="row"><span>🗓️</span><div class="grow">${cls}</div></div>
+        ${gap ? `<a class="row" href="#rooms" style="color:inherit"><span>🚪</span><div class="grow">공강 ${durationLabel(gap)} — 빈 강의실 찾기</div></a>` : ""}
         <a class="row" href="#shuttle" style="color:inherit"><span>🚌</span><div class="grow">${bus}</div></a>
+        ${fav.length ? `<a class="row" href="#menu" style="color:inherit"><span>❤️</span><div class="grow">오늘 학식에 좋아하는 메뉴: ${esc(fav.slice(0, 3).join(", "))}${fav.length > 3 ? ` 외 ${fav.length - 3}개` : ""}</div></a>` : ""}
         ${exam ? `<a class="row" href="#schedule" style="color:inherit"><span>📝</span><div class="grow">${exam}</div></a>` : ""}
         ${soon.map((t) => `<a class="row" href="#tasks" style="color:inherit"><span>📌</span><div class="grow">${esc(t.course)} ${esc(t.kind)}${t.title ? " · " + esc(t.title) : ""} <span class="badge red">${taskBadge(t)}</span></div></a>`).join("")}
       </section>
+      ${week ? show("week", `<section class="card"><h2>${esc(week.title)}</h2>${week.lines.map((l) => `<div class="sub" style="margin:3px 0">${esc(l)}</div>`).join("")}</section>`) : ""}
       ${reg ? show("reg", `<section class="card"><h2>📋 ${esc(courseRegShort(reg))}</h2>${eventRow(reg)}
         <div class="btns"><button class="btn ghost" id="regics">내 차례 알람을 캘린더에 넣기</button></div>
         <p class="note">학년별 시작 시각은 학사공지·강의편람에서 확인해 주세요.</p></section>`) : ""}
@@ -257,6 +267,39 @@ function eventRow(e) {
   const range = e.end && e.end !== e.start ? `${md(e.start)} ~ ${md(e.end)}` : md(e.start);
   return `<div class="row">${badge}<div class="grow"><div class="t">${esc(e.title)}</div><div class="sub">${range}</div></div></div>`;
 }
+// 지금(수업 중이면 그 수업이 끝난 뒤)부터 다음 수업까지 빈 시간(분). 1시간 미만이거나 아직 첫 수업 전이면 null — 앱 WeekPlanner.gapMinutes
+function gapMinutes(classes, now, minGap = 60) {
+  const real = classes.filter((c) => !c.online).sort((a, b) => a.start - b.start);
+  const running = real.find((c) => c.start <= now && now < c.end);
+  const from = running ? running.end : now;
+  const next = real.find((c) => c.start > from);
+  if (!next || (!running && !real.some((c) => c.end <= now))) return null;
+  const g = next.start - from;
+  return g >= minGap ? g : null;
+}
+const durationLabel = (m) => (m < 60 ? `${m}분` : m % 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m / 60}시간`);
+
+// 이번 주 요약(앱 WeekPlanner.weekSummary): 요일별 수업 수·이번 주 시험과제·마감 담은 공지·쉬는 날. 일요일엔 다음 주.
+function weekSummary() {
+  const now = new Date(), di = dayIndex(now);
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (di === 6 ? 1 : -di));
+  const keys = range(7).map((i) => keyOf(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i)));
+  const inWeek = new Set(keys), hol = data.holidays || {}, lines = [];
+  const real = termClasses().filter((c) => !c.online);
+  const perDay = range(7).map((i) => [i, real.filter((c) => c.day === i).length]).filter(([i, n]) => n && !hol[keys[i]]);
+  if (perDay.length) lines.push(`수업 ${perDay.reduce((s, [, n]) => s + n, 0)}개 (${perDay.map(([i, n]) => `${DAYS[i]} ${n}`).join(" · ")})`);
+  const mdk = (k) => `${+k.slice(4, 6)}/${+k.slice(6, 8)}`;
+  const wt = allTasks().filter((t) => !t.done && inWeek.has(t.date)).sort((a, b) => a.date.localeCompare(b.date));
+  wt.slice(0, 3).forEach((t) => lines.push(`${mdk(t.date)} [${t.kind}] ${t.course} · ${t.title || t.kind}`));
+  if (wt.length > 3) lines.push(`시험·과제 외 ${wt.length - 3}건`);
+  const wn = Object.values(bookmarks()).map((n) => [n.title, deadlineOf(n.title, n.date || "")]).filter(([, d]) => d && inWeek.has(d)).sort((a, b) => a[1].localeCompare(b[1]));
+  wn.slice(0, 3).forEach(([t, d]) => lines.push(`${mdk(d)} 마감 ${t}`));
+  if (wn.length > 3) lines.push(`마감 공지 외 ${wn.length - 3}건`);
+  const off = keys.map((k, i) => (hol[k] ? `${mdk(k)}(${DAYS[i]}) ${hol[k]}` : null)).filter(Boolean);
+  if (off.length) lines.push(`쉬는 날: ${off.join(", ")}`);
+  return lines.length ? { title: `${di === 6 ? "다음 주" : "이번 주"} 요약 (${mdk(keys[0])}~${mdk(keys[6])})`, lines } : null;
+}
+
 function examLine() {
   const tk = todayKey();
   const ev = upcomingEvents().filter((e) => /(중간|기말)고사/.test(e.title) && !e.title.includes("대학원"))[0];
@@ -381,7 +424,11 @@ routes.keywords = {
     return `<section class="card"><h2>관심 키워드</h2>
       <p class="sub">제목에 이 말이 들어간 공지를 노랗게 표시하고, 공지 탭의 🔑 키워드 칩에 모아요. (예: 장학, 근로, 수강신청)</p>
       <form class="chatbar" id="kf" style="position:static"><input type="text" id="ki" placeholder="키워드 입력" autocomplete="off"><button class="btn">추가</button></form>
-      <div class="chips" style="flex-wrap:wrap">${keywords().map((k, i) => `<button class="chip on" data-k="${i}">${esc(k)} ✕</button>`).join("") || '<span class="sub">아직 없어요</span>'}</div></section>`;
+      <div class="chips" style="flex-wrap:wrap">${keywords().map((k, i) => `<button class="chip on" data-k="${i}">${esc(k)} ✕</button>`).join("") || '<span class="sub">아직 없어요</span>'}</div></section>
+      <section class="card"><h2>제외 키워드</h2>
+      <p class="sub">제목에 이 말이 들어간 공지는 목록과 홈에서 숨겨요. (예: 대학원, 채용)</p>
+      <form class="chatbar" id="xf" style="position:static"><input type="text" id="xi" placeholder="숨길 말 입력" autocomplete="off"><button class="btn">추가</button></form>
+      <div class="chips" style="flex-wrap:wrap">${excludes().map((k, i) => `<button class="chip" data-x="${i}">${esc(k)} ✕</button>`).join("") || '<span class="sub">아직 없어요</span>'}</div></section>`;
   },
   after() {
     $("#kf").onsubmit = (e) => {
@@ -391,10 +438,25 @@ routes.keywords = {
       render();
     };
     view.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { store.set("keywords", keywords().filter((_, i) => i !== +b.dataset.k)); render(); }));
+    $("#xf").onsubmit = (e) => {
+      e.preventDefault();
+      const k = $("#xi").value.trim();
+      if (k && !excludes().includes(k)) store.set("excludes", [...excludes(), k].slice(0, 30));
+      render();
+    };
+    view.querySelectorAll("[data-x]").forEach((b) => (b.onclick = () => { store.set("excludes", excludes().filter((_, i) => i !== +b.dataset.x)); render(); }));
   },
 };
 
 // ----- 학식 -----
+// 좋아하는 메뉴(앱 MenuAlerts): 그 메뉴가 나오는 날 홈에 알려 주고 식단에서 칠한다. 띄어쓰기는 무시한다.
+const favDishes = () => store.get("favDishes", []);
+const favHit = (dish) => favDishes().some((f) => f && dish.replace(/\s/g, "").includes(f.replace(/\s/g, "")));
+const dishHtml = (d) => (favHit(d) ? `<mark>${esc(d)}</mark>` : esc(d));
+function favToday() {
+  const tk = todayKey();
+  return (data.menu?.cafeterias || []).flatMap((c) => (c.days?.[tk] || []).flatMap((m) => m.dishes.filter(favHit).map((d) => `${c.name} · ${d}`)));
+}
 routes.menu = {
   title: "학식",
   html(arg) {
@@ -408,9 +470,22 @@ routes.menu = {
       ${m.cafeterias.map((c) => {
         const meals = c.days[sel] || [];
         return `<section class="card"><h2>${esc(c.name)}</h2>
-          ${meals.length ? meals.map((x) => `<div class="meal"><b>${esc(x.name)}</b><p>${esc(x.dishes.join(" · "))}</p></div>`).join("") : '<div class="sub">식단 없음</div>'}
+          ${meals.length ? meals.map((x) => `<div class="meal"><b>${esc(x.name)}</b><p>${x.dishes.map(dishHtml).join(" · ")}</p></div>`).join("") : '<div class="sub">식단 없음</div>'}
           ${c.hours ? `<p class="note">${esc(c.hours)}</p>` : ""}</section>`;
-      }).join("")}`;
+      }).join("")}
+      <section class="card"><h2>좋아하는 메뉴</h2>
+        <p class="sub">적어 두면 그 메뉴가 나오는 날 홈의 오늘 카드에 알려 주고, 식단에서 노랗게 칠해요. (예: 돈까스, 떡볶이)</p>
+        <form class="chatbar" id="ff" style="position:static"><input type="text" id="fi" placeholder="메뉴 이름" autocomplete="off"><button class="btn">추가</button></form>
+        <div class="chips" style="flex-wrap:wrap">${favDishes().map((k, i) => `<button class="chip on" data-fav="${i}">${esc(k)} ✕</button>`).join("") || '<span class="sub">아직 없어요</span>'}</div></section>`;
+  },
+  after() {
+    $("#ff") && ($("#ff").onsubmit = (e) => {
+      e.preventDefault();
+      const k = $("#fi").value.trim();
+      if (k && !favDishes().includes(k)) store.set("favDishes", [...favDishes(), k].slice(0, 30));
+      render();
+    });
+    view.querySelectorAll("[data-fav]").forEach((b) => (b.onclick = () => { store.set("favDishes", favDishes().filter((_, i) => i !== +b.dataset.fav)); render(); }));
   },
 };
 
@@ -432,6 +507,70 @@ function gridHtml(list, clickable = true) {
   return `<div class="tt" style="--days:${maxDay + 1}">
     <div class="hd"></div>${range(maxDay + 1).map((d) => `<div class="hd ${d === ti ? "today" : ""}">${DAYS[d]}</div>`).join("")}
     <div class="hours" style="grid-row:2">${range(endH - startH).map((h) => `<div>${startH + h}</div>`).join("")}</div>${cols}</div>`;
+}
+
+// 수강신청 목록(앱 SugangList): "학수번호-분반 과목명" — 이루미 수강신청 화면에 옮겨 적기 좋게
+async function copySugangList(term) {
+  const lines = [...new Set(termClasses(term).map((c) => {
+    const p = (c.courseKey || "").split("|");
+    return p.length === 4 && /^\d+$/.test(p[0]) ? `${p[2]}-${p[3]} ${c.name}` : null;
+  }).filter(Boolean))].sort();
+  if (!lines.length) return toast("학수번호가 있는 과목이 없어요");
+  try { await navigator.clipboard.writeText(lines.join("\n")); toast(`${lines.length}과목을 복사했어요 (학수번호-분반)`); }
+  catch { prompt("아래를 길게 눌러 복사하세요", lines.join(" / ")); }
+}
+
+// 시간표 그림(앱 TimetableExport와 같은 배치): 학기 제목 + 표 + 비고 칸. 공유 창(사진 저장)이 되면 그쪽, 안 되면 내려받기.
+async function saveTimetableImage(term) {
+  const list = termClasses(term), grid = list.filter((c) => !c.online), online = list.filter((c) => c.online);
+  if (!list.length) return toast("시간표가 비어 있어요");
+  const days = [0, 1, 2, 3, 4, ...[5, 6].filter((d) => grid.some((c) => c.day === d))];
+  const from = Math.min(9, ...grid.map((c) => Math.floor(c.start / 60))), to = Math.max(17, ...grid.map((c) => Math.ceil(c.end / 60)));
+  const W = 1080, P = 36, head = 120, rowH = 130, hdr = 60, timeW = 62, remarkLine = 44;
+  const gridH = hdr + (to - from) * rowH + (online.length ? 40 + online.length * remarkLine : 0);
+  const H = head + gridH + 56, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d"), font = getComputedStyle(document.body).fontFamily;
+  const F = (px, bold) => `${bold ? "700" : "500"} ${px}px ${font}`;
+  g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#222"; g.font = F(52, true); g.fillText(termLabel(term), P, 82);
+  const x0 = P, y0 = head, w = W - P * 2, colW = (w - timeW) / days.length, line = "rgba(34,34,34,.24)";
+  g.fillStyle = "#1E4FA3"; g.font = F(28, true); g.textAlign = "center";
+  days.forEach((d, i) => g.fillText(DAYS[d], x0 + timeW + colW * i + colW / 2, y0 + hdr * 0.68));
+  g.strokeStyle = line; g.lineWidth = 2; g.font = F(24); g.textAlign = "right";
+  const gridBottom = y0 + hdr + (to - from) * rowH;
+  for (let h = from; h <= to; h++) {
+    const y = y0 + hdr + (h - from) * rowH;
+    g.beginPath(); g.moveTo(x0, y); g.lineTo(x0 + w, y); g.stroke();
+    if (h < to) g.fillText(String(h > 12 ? h - 12 : h), x0 + timeW - 8, y + 28);
+  }
+  for (let i = 0; i <= days.length; i++) { const x = x0 + timeW + colW * i; g.beginPath(); g.moveTo(x, y0 + hdr * 0.85); g.lineTo(x, gridBottom); g.stroke(); }
+  g.textAlign = "left";
+  const fit = (t, max) => { if (g.measureText(t).width <= max) return t; while (t.length > 1 && g.measureText(t + "…").width > max) t = t.slice(0, -1); return t + "…"; };
+  grid.forEach((c) => {
+    const col = days.indexOf(c.day); if (col < 0) return;
+    const left = x0 + timeW + colW * col + 2, top = y0 + hdr + ((c.start - from * 60) / 60) * rowH + 2, bottom = y0 + hdr + ((c.end - from * 60) / 60) * rowH - 2;
+    const hex = PALETTE[(c.color || 0) % PALETTE.length], mix = (k) => Math.round(parseInt(hex.slice(k, k + 2), 16) * 0.42 + 255 * 0.58);
+    g.fillStyle = `rgb(${mix(1)},${mix(3)},${mix(5)})`; g.fillRect(left, top, colW - 4, bottom - top);
+    const room = colW - 20; let y = top + 34;
+    g.fillStyle = "#222"; g.font = F(27, true); if (y <= bottom) g.fillText(fit(c.name, room), left + 8, y);
+    g.fillStyle = "#4a4a4a"; g.font = F(22); y += 30;
+    const tl = [`${hm(c.start)} ~ ${hm(c.end)}`, `${hm(c.start)}~${hm(c.end)}`, hm(c.start)].find((t) => g.measureText(t).width <= room) || hm(c.start);
+    if (y <= bottom) g.fillText(tl, left + 8, y);
+    y += 28; if (y <= bottom && c.room) g.fillText(fit(c.room, room), left + 8, y);
+  });
+  if (online.length) {
+    g.fillStyle = "#1E4FA3"; g.font = F(22); g.textAlign = "center"; g.fillText("비고", x0 + timeW / 2, gridBottom + remarkLine);
+    g.textAlign = "left"; g.fillStyle = "#222";
+    online.forEach((c, i) => g.fillText(fit(c.name + (c.note ? ` (${c.note})` : ""), w - timeW - 20), x0 + timeW + 12, gridBottom + remarkLine * (i + 1)));
+  }
+  g.fillStyle = "#969696"; g.font = F(26); g.textAlign = "right"; g.fillText("부경대 공지알리미", W - P, H - 20);
+  const blob = await new Promise((r) => cv.toBlob(r, "image/png"));
+  const file = new File([blob], `시간표_${term}.png`, { type: "image/png" });
+  if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: termLabel(term) + " 시간표" }); return; } catch (e) { if (e.name === "AbortError") return; } }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast("시간표 그림을 내려받았어요");
 }
 
 // 같은 요일에 시간이 겹치는 서로 다른 과목 쌍(앱 TimetableConflicts)
@@ -461,11 +600,15 @@ routes.timetable = {
         <a class="btn ghost" href="#wizard">🪄 시간표 마법사</a>
         <button class="btn ghost" id="add">＋ 직접 추가</button>
         <a class="btn ghost" href="#credits">🎓 학점·졸업 요건</a>
+        <button class="btn ghost" id="ttimg">🖼️ 시간표 그림 저장·공유</button>
+        <button class="btn ghost" id="sugang">📋 수강신청 목록 복사</button>
         <label class="btn ghost">안드로이드 백업 가져오기<input type="file" id="imp" accept=".json,application/json" hidden></label>
       </div>
       <p class="note">시간표는 이 휴대폰 브라우저에만 저장돼요. 칸을 누르면 고치기·결석·길찾기를 할 수 있어요.</p>`;
   },
   after() {
+    $("#ttimg").onclick = () => saveTimetableImage(viewTerm);
+    $("#sugang").onclick = () => copySugangList(viewTerm);
     $("#tprev").onclick = () => { viewTerm = termShift(viewTerm, -1); render(); };
     $("#tnext").onclick = () => { viewTerm = termShift(viewTerm, 1); render(); };
     $("#tnow") && ($("#tnow").onclick = () => { viewTerm = termKey(); render(); });
@@ -588,6 +731,7 @@ routes.more = {
       ${item("#credits", "🎓", "학점·졸업 요건", "이수 학점, 평점, 목표 평점, 졸업까지 남은 학점")}
       ${item("#curriculum", "📖", "교육과정", "학년도별 안내서 바로 펴기 · 입학연도별 졸업소요학점")}
       ${item("#docs", "📄", "자료실 문서", "교육과정·대학생활 가이드·강의편람 PDF, 문서 안 단어 찾기")}
+      ${item("#contacts", "☎️", "학과 연락처", "학과 사무실 전화번호")}
       ${item("#links", "🔗", "학교 사이트 바로가기", "이루미·강의계획서·자료실 등")}
       </section>
       <section class="card"><h2>설정</h2>

@@ -189,6 +189,30 @@ routes.schedule = {
   },
 };
 
+// ================= 학과 연락처 (앱 DeptContactScreen) =================
+// 공지 게시판 페이지(대개 푸터)에 적힌 학과 사무실 전화. Actions가 공지를 받을 때 같이 뽑는다(이메일은 안 뽑는다).
+routes.contacts = {
+  title: "학과 연락처", sub: true, tab: "more",
+  html() {
+    return `<input type="search" id="cq" placeholder="학과·단과대 이름" value="">
+      <div id="cl"></div>
+      <p class="note">학과 홈페이지에 적힌 사무실 번호예요. 없거나 틀리면 학과 홈페이지에서 확인해 주세요. 이메일은 학과 홈페이지에서 직접 보세요.</p>`;
+  },
+  after() {
+    const boards = Object.entries(data.notices?.boards || {}).filter(([id]) => id !== "academic").map(([id, b]) => ({ id, ...b }));
+    const draw = () => {
+      const q = $("#cq").value.trim().replace(/\s+/g, "");
+      const list = boards.filter((b) => (b.tels?.length || b.college) && (!q || (b.name + b.college).replace(/\s+/g, "").includes(q)));
+      const colleges = [...new Set(list.map((b) => b.college))];
+      $("#cl").innerHTML = colleges.map((c) => `<section class="card"><h2>${esc(c)}</h2>${list.filter((b) => b.college === c).map((b) => `<div class="row"><div class="grow">${esc(b.name)}
+          <div class="sub">${b.tels?.length ? b.tels.map((t) => `<a href="tel:${esc(t.replace(/-/g, ""))}">${esc(t)}</a>`).join(" · ") : `<a href="${esc(b.url)}" target="_blank" rel="noopener">홈페이지에서 확인 ›</a>`}</div></div></div>`).join("")}</section>`).join("")
+        || '<div class="empty">찾는 학과가 없어요</div>';
+    };
+    $("#cq").oninput = draw;
+    draw();
+  },
+};
+
 // ================= 학교 사이트 바로가기 =================
 routes.links = {
   title: "학교 사이트", sub: true, tab: "more",
@@ -333,7 +357,7 @@ async function docPage(doc) {
 }
 
 // ================= 화면·백업 설정 =================
-const HOME_CARDS = [["chat", "AI 챗봇 배너"], ["reg", "수강신청 알리미"], ["menu", "오늘 학식"], ["schedule", "다가오는 학사일정"], ["notices", "최근 공지"]];
+const HOME_CARDS = [["chat", "AI 챗봇 배너"], ["week", "이번 주 요약"], ["reg", "수강신청 알리미"], ["menu", "오늘 학식"], ["schedule", "다가오는 학사일정"], ["notices", "최근 공지"]];
 const SCALES = [[0.9, "작게"], [1, "보통"], [1.15, "크게"], [1.3, "아주 크게"]];
 function applyLook() {
   const t = store.get("theme", "auto");
