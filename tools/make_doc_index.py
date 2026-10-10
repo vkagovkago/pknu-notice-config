@@ -1,11 +1,43 @@
 # 자료실 PDF의 글자 색인(앱 PdfTextIndex, 문서 안 단어 찾기). 쪽마다 낱말과 위치(쪽 크기 비율)를 뽑아
 # docindex/<파일이름>.idx.gz로 둔다. 휴대폰에서 882쪽짜리 PDF를 직접 읽으면 메모리가 모자라서 여기서 미리 한다.
-# 글자가 없는(그림뿐인) 쪽은 비워 두고, 앱이 그 쪽만 기기에서 글자 인식(OCR)한다.
+# 글자가 거의 없는(그림뿐인) 쪽은 여기서 그림으로 그려 글자 인식(OCR, tesseract 한국어)을 한다 — 웹앱도 찾을 수 있게,
+# 앱은 휴대폰에서 1분씩 읽지 않게. OCR을 못 하는 환경이면(tesseract 없음) 그 쪽은 비워 두고 앱이 기기에서 한다.
 #   python make_doc_index.py docindex            자료실 문서 + 지난 교육과정·졸업요건 안내자료
 # 이미 만든 색인은 PDF 크기가 같으면 건너뛴다(FORCE=1이면 다시).
 import gzip, io, json, os, re, sys
 import pdfplumber, requests
 from bs4 import BeautifulSoup
+
+try:
+    import pytesseract
+    pytesseract.get_tesseract_version()
+except Exception:  # 내 PC처럼 tesseract가 없으면 OCR 없이(예전처럼) 만든다
+    pytesseract = None
+
+# 색인 둘째 줄의 표시. 이게 있어야 "그림 쪽까지 OCR한 색인"이다 — 없으면 PDF가 그대로여도 다시 만든다.
+# 앱(PdfTextIndex)과 웹앱은 칸이 6개가 안 되는 줄을 건너뛰므로 이 줄을 무시한다.
+OCR_MARK = "#ocr1"
+# 앱 PdfTextIndex와 같은 기준: 쪽 글자가 이보다 적으면 그림으로 본다
+MIN_TEXT = 20
+
+
+# 쪽을 그림으로 그려(200dpi) 낱말과 위치를 읽는다. 앱의 ML Kit 결과와 같은 모양(쪽 크기 비율)으로.
+def ocr_words(page, i):
+    img = page.to_image(resolution=200).original
+    width, height = img.size
+    d = pytesseract.image_to_data(img, lang="kor+eng", output_type=pytesseract.Output.DICT)
+    out = []
+    for k, t in enumerate(d["text"]):
+        t = re.sub(r"\s+", " ", t or "").strip()
+        try:
+            conf = float(d["conf"][k])
+        except (TypeError, ValueError):
+            conf = -1
+        if not t or conf < 40:  # 알아보기 힘든 조각은 버린다(찾을 때 엉뚱한 쪽이 걸리지 않게)
+            continue
+        x, y, w, h = d["left"][k], d["top"][k], d["width"][k], d["height"][k]
+        out.append(f"{i}\t{x / width:.4f}\t{y / height:.4f}\t{w / width:.4f}\t{h / height:.4f}\t{t}")
+    return out
 
 UA = {"User-Agent": "Mozilla/5.0 (pknu-notice docindex)"}
 # (분류, 페이지, 최근 학년도만) — 앱 CampusDocRepository.SOURCES와 같다
@@ -89,11 +121,21 @@ def rows_of(pdf_bytes):
             except Exception as e:  # 깨진 쪽은 비워 둔다(앱이 OCR)
                 print(f"  {i + 1}쪽 실패: {e}", flush=True)
                 lines = []
+            words = []
             for l in lines:
                 t = re.sub(r"\s+", " ", l["text"]).strip()
                 if not t:
                     continue
-                out.append(f"{i}\t{l['x0'] / w:.4f}\t{l['top'] / h:.4f}\t{(l['x1'] - l['x0']) / w:.4f}\t{(l['bottom'] - l['top']) / h:.4f}\t{t}")
+                words.append(f"{i}\t{l['x0'] / w:.4f}\t{l['top'] / h:.4f}\t{(l['x1'] - l['x0']) / w:.4f}\t{(l['bottom'] - l['top']) / h:.4f}\t{t}")
+            if pytesseract and sum(len(x.rsplit("\t", 1)[-1]) for x in words) < MIN_TEXT:
+                try:
+                    got = ocr_words(page, i)
+                    if got:
+                        words = got
+                        print(f"  {i + 1}쪽 OCR 낱말 {len(got)}", flush=True)
+                except Exception as e:
+                    print(f"  {i + 1}쪽 OCR 실패: {e}", flush=True)
+            out += words
             page.flush_cache()
     return out
 
@@ -112,13 +154,17 @@ def main(out_dir):
         size = str(len(r.content))
         if os.path.exists(path) and os.environ.get("FORCE") != "1":
             with gzip.open(path, "rt", encoding="utf-8") as f:
-                if f.readline().strip() == size:
-                    print("그대로", url, flush=True)
-                    continue
+                same = f.readline().strip() == size
+                marked = f.readline().strip() == OCR_MARK
+            # OCR을 못 하는 환경에서는 표시 없이도 그대로 둔다(OCR 색인을 OCR 없는 색인으로 덮지 않게)
+            if same and (marked or not pytesseract):
+                print("그대로", url, flush=True)
+                continue
         rows = rows_of(r.content)
         # 첫 줄은 PDF 크기 — 앱이 받아둔 파일과 크기가 다르면(학교가 바꿈) 이 색인을 안 쓴다
-        with gzip.open(path, "wt", encoding="utf-8", compresslevel=9) as f:
-            f.write(size + "\n" + "\n".join(rows) + "\n")
+        with gzip.open(path, "wt", encoding="utf-8", newline="
+", compresslevel=9) as f:
+            f.write(size + "\n" + (OCR_MARK + "\n" if pytesseract else "") + "\n".join(rows) + "\n")
         print(f"{url} → {path} 줄 {len(rows)}, {os.path.getsize(path) // 1024}KB", flush=True)
 
 

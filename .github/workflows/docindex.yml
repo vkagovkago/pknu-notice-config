@@ -1,5 +1,6 @@
 # 자료실 PDF 글자 색인(docindex/<파일이름>.idx.gz). 앱 PDF 보기의 단어 찾기가 받아 쓴다(tools/make_doc_index.py).
 # 학교가 새 문서를 올리거나 파일을 바꾸면 주 1회 다시 만든다. 이미 만든 문서는 PDF 크기가 같으면 건너뛴다.
+# 그림뿐인 쪽은 tesseract(한국어)로 글자 인식해 같이 넣는다 — 웹앱도 그 쪽을 찾고, 앱은 휴대폰에서 OCR하지 않는다.
 name: 자료실 글자 색인
 
 on:
@@ -17,13 +18,14 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests pdfplumber beautifulsoup4
+      - run: sudo apt-get update -q && sudo apt-get install -y -q tesseract-ocr tesseract-ocr-kor
+      - run: pip install requests pdfplumber beautifulsoup4 pytesseract
       - run: python tools/make_doc_index.py docindex
         env:
           FORCE: ${{ inputs.force }}
