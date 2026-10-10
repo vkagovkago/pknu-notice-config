@@ -19,6 +19,7 @@ on:
       - "shuttle.json"
       - "rooms.json"
       - "courses/**"
+      - "docindex/**"
       - ".github/workflows/pages.yml"
 
 permissions:
@@ -44,6 +45,8 @@ jobs:
         run: |
           mkdir -p site/data
           cp -r web/. site/
+          # 자료실 문서 목록·글자 색인(웹앱 자료실 단어 찾기, 매주 docindex.yml이 만든다)
+          cp -r docindex site/data/docindex
           # 지난번 배포본의 공지 목록 — 받기 실패한 게시판은 이걸 그대로 쓰고, 새 글 비교에도 쓴다
           curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/notices.json -o site/data/notices.json || true
           curl -sfL https://vkagovkago.github.io/pknu-notice-config/data/holidays.json -o site/data/holidays.json || true

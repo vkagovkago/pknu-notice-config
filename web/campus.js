@@ -205,6 +205,128 @@ routes.links = {
   },
 };
 
+// ================= 자료실 문서 (앱 자료실 + PdfTextIndex 단어 찾기) =================
+// 목록·글자 색인은 매주 Actions가 만든다(tools/make_doc_index.py → docindex/docs.json, <파일>.idx.gz).
+// 색인 한 줄: "쪽\tx\ty\tw\th\t낱말"(첫 줄은 PDF 크기). 같은 줄 낱말을 다시 이어 붙여 찾는다 — 앱과 같은 규칙.
+const docIdx = {};
+async function docIndex(file) {
+  if (docIdx[file]) return docIdx[file];
+  const r = await fetch(`data/docindex/${enc(file)}.idx.gz`);
+  if (!r.ok) throw new Error("색인 없음");
+  const buf = new Uint8Array(await r.arrayBuffer());
+  // 서버가 gzip을 풀어서 주는 경우도 있어 앞 두 바이트(1f 8b)로 가른다
+  const text = buf[0] === 0x1f && buf[1] === 0x8b
+    ? await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text()
+    : new TextDecoder().decode(buf);
+  const pages = new Map();
+  // 윈도에서 만든 색인은 줄 끝이 \r\n이다
+  text.split(/\r?\n/).slice(1).forEach((l) => {
+    const f = l.split("\t");
+    if (f.length < 6) return;
+    const p = +f[0];
+    if (!pages.has(p)) pages.set(p, []);
+    pages.get(p).push({ x: +f[1], y: +f[2], h: +f[4], t: f[5] });
+  });
+  // 위아래가 거의 같은 낱말끼리 한 줄로, 왼쪽부터(앱 PdfTextIndex.rowsOf)
+  const rows = new Map();
+  pages.forEach((words, p) => {
+    const out = [];
+    words.sort((a, b) => (a.y + a.h / 2) - (b.y + b.h / 2)).forEach((w) => {
+      const last = out[out.length - 1];
+      if (last && Math.abs((last[0].y + last[0].h / 2) - (w.y + w.h / 2)) < last[0].h * 0.5) last.push(w); else out.push([w]);
+    });
+    rows.set(p, out.map((r) => r.sort((a, b) => a.x - b.x).map((w) => w.t).join(" ")));
+  });
+  return (docIdx[file] = rows);
+}
+// 띄어쓰기를 무시하고 찾는다("교육 과정" = "교육과정"). 숫자 사이 띄어쓰기만 남긴다 — 표의 "120 0 120"이 붙지 않게.
+const docNorm = (s) => s.trim().replace(/(?<=\D)\s+|\s+(?=\D)/g, "").toLowerCase();
+function docSearch(rows, q) {
+  const nq = docNorm(q);
+  if (!nq) return [];
+  const hits = [];
+  [...rows.keys()].sort((a, b) => a - b).forEach((p) => rows.get(p).forEach((line) => { if (docNorm(line).includes(nq)) hits.push({ page: p, line }); }));
+  return hits;
+}
+// 찾은 말을 칠한다 — 글자 사이 띄어쓰기는 있어도 되게
+function docMark(line, q) {
+  const pat = [...q.replace(/\s+/g, "")].map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s*");
+  return esc(line).replace(new RegExp(pat.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"), "gi"), (m) => `<mark>${m}</mark>`);
+}
+async function docList() {
+  try { return await load("docindex/docs"); } catch { return []; }
+}
+function docHits(doc, hits, q, limit) {
+  const byPage = new Map();
+  hits.forEach((h) => { if (!byPage.has(h.page)) byPage.set(h.page, []); byPage.get(h.page).push(h.line); });
+  const shown = [...byPage.entries()].slice(0, limit);
+  return shown.map(([p, lines]) => `<a class="row" href="${esc(doc.url)}#page=${p + 1}" target="_blank" rel="noopener" style="color:inherit">
+      <div class="grow"><b>${p + 1}쪽</b><div class="sub">${lines.slice(0, 3).map((l) => docMark(l, q)).join("<br>")}</div></div><span class="sub">PDF ›</span></a>`).join("")
+    + (byPage.size > limit ? `<p class="note">외 ${byPage.size - limit}쪽 더 있어요 — 말을 더 붙여 좁혀 보세요.</p>` : "");
+}
+
+routes.docs = {
+  title: "자료실", sub: true, tab: "more",
+  html(file) {
+    return `<div id="dv"><div class="empty">불러오는 중…</div></div>`;
+  },
+  async after(file) {
+    const docs = await docList();
+    if (current !== "docs") return;
+    const doc = docs.find((d) => d.file === file);
+    if (doc) return docPage(doc);
+    const groups = [...new Set(docs.map((d) => d.desc))];
+    $("#dv").innerHTML = (docs.length ? `<section class="card"><h2>모든 문서에서 찾기</h2>
+        <form id="daf" class="chatbar" style="position:static;padding:0"><input type="search" id="daq" placeholder="예: 졸업 학점, 휴학, 수강신청"><button class="btn" style="white-space:nowrap">찾기</button></form>
+        <div id="dar"></div></section>` : "")
+      + groups.map((g) => `<section class="card"><h2>${esc(g)}</h2>${docs.filter((d) => d.desc === g).map((d) => `<a class="row" href="#docs/${enc(d.file)}" style="color:inherit">
+          <div class="grow">${esc(d.title)}<div class="sub">${d.pages ? `${d.pages}쪽 · 단어 찾기` : "그림으로 된 문서 · PDF로 보기"}</div></div><span class="sub">›</span></a>`).join("")}</section>`).join("")
+      + (docs.length ? "" : '<div class="empty">문서 목록을 아직 받지 못했어요.</div>')
+      + '<p class="note">학교 홈페이지 자료실(교육과정·대학생활 가이드·강의편람·비교과)의 PDF예요. 목록과 글자 색인은 매주 새로 만들어요.</p>';
+    $("#daf")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const q = $("#daq").value.trim();
+      if (!q) return;
+      const out = $("#dar");
+      out.innerHTML = '<div class="empty">찾는 중…</div>';
+      let html = "", total = 0;
+      for (const d of docs.filter((x) => x.pages)) {
+        try {
+          const hits = docSearch(await docIndex(d.file), q);
+          if (!hits.length) continue;
+          total += hits.length;
+          html += `<h3 style="margin:12px 0 4px">${esc(d.title)} <span class="sub">${new Set(hits.map((h) => h.page)).size}쪽</span></h3>` + docHits(d, hits, q, 5);
+        } catch {}
+        if (current !== "docs") return;
+      }
+      out.innerHTML = total ? html + '<p class="note">쪽을 누르면 PDF가 그 쪽으로 열려요(아이폰 Safari는 첫 쪽부터 열릴 수 있어요 — 쪽 번호를 보고 넘겨 주세요).</p>'
+        : `<div class="empty">'${esc(q)}'이(가) 든 곳이 없어요.</div>`;
+    });
+  },
+};
+
+async function docPage(doc) {
+  $("#title").textContent = doc.title;
+  $("#dv").innerHTML = `<section class="card"><div class="btns"><a class="btn" href="${esc(doc.url)}" target="_blank" rel="noopener">PDF 열기${doc.pages ? ` (${doc.pages}쪽)` : ""}</a></div>
+      ${doc.pages ? `<form id="df" class="chatbar" style="position:static;padding:0;margin-top:10px"><input type="search" id="dq" placeholder="문서에서 찾을 말"><button class="btn" style="white-space:nowrap">찾기</button></form>`
+        : '<p class="note">그림으로만 된 문서라 웹에서는 단어를 찾을 수 없어요(안드로이드 앱은 글자 인식으로 찾아요).</p>'}</section>
+    <div id="dr"></div>`;
+  $("#df")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const q = $("#dq").value.trim();
+    if (!q) return;
+    $("#dr").innerHTML = '<div class="empty">찾는 중…</div>';
+    try {
+      const hits = docSearch(await docIndex(doc.file), q);
+      $("#dr").innerHTML = hits.length
+        ? `<section class="card"><h2>${new Set(hits.map((h) => h.page)).size}쪽에서 찾았어요</h2>${docHits(doc, hits, q, 60)}</section>`
+        : `<div class="empty">'${esc(q)}'이(가) 든 곳이 없어요.</div>`;
+    } catch {
+      $("#dr").innerHTML = '<div class="empty">글자 색인을 받지 못했어요. 잠시 뒤 다시 해 주세요.</div>';
+    }
+  });
+}
+
 // ================= 화면·백업 설정 =================
 const HOME_CARDS = [["chat", "AI 챗봇 배너"], ["reg", "수강신청 알리미"], ["menu", "오늘 학식"], ["schedule", "다가오는 학사일정"], ["notices", "최근 공지"]];
 const SCALES = [[0.9, "작게"], [1, "보통"], [1.15, "크게"], [1.3, "아주 크게"]];

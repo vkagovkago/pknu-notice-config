@@ -5,9 +5,12 @@
 # 이미 만든 색인은 PDF 크기가 같으면 건너뛴다(FORCE=1이면 다시).
 import gzip, io, json, os, re, sys
 import pdfplumber, requests
+from bs4 import BeautifulSoup
 
 UA = {"User-Agent": "Mozilla/5.0 (pknu-notice docindex)"}
-SOURCES = ["https://www.pknu.ac.kr/main/27", "https://www.pknu.ac.kr/main/434", "https://www.pknu.ac.kr/main/28", "https://www.pknu.ac.kr/main/362"]
+# (분류, 페이지, 최근 학년도만) — 앱 CampusDocRepository.SOURCES와 같다
+SOURCES = [("교육과정", "https://www.pknu.ac.kr/main/27", False), ("대학생활 가이드", "https://www.pknu.ac.kr/main/434", True),
+           ("강의편람", "https://www.pknu.ac.kr/main/28", False), ("비교과", "https://www.pknu.ac.kr/main/362", False)]
 # 앱 PastCurriculum.kt의 문서들과 졸업요건 안내자료(main/238이 PDF를 바로 준다)
 EXTRA = ["https://www.pknu.ac.kr/main/238"]
 
@@ -16,19 +19,59 @@ def file_name(url):  # 앱 CampusDoc.fileName과 같게
     return re.sub(r"[^A-Za-z0-9._-]", "_", url.rsplit("/", 1)[-1])[:120]
 
 
-def doc_urls():
-    urls = []
-    for page in SOURCES:
+def media_url(data_id):
+    r = requests.post("https://www.pknu.ac.kr/common/getMdaId.do", data={"no": data_id}, headers=UA, timeout=30).json().get("response", "").strip()
+    return "https://www.pknu.ac.kr/upload/" + r if r.lower().endswith(".pdf") else None
+
+
+def clean_title(text):  # "2026-1학기 강의편람(PDF) 보기" -> "2026-1학기 강의편람"
+    t = re.sub(r"\s+", " ", text.replace("ebook 바로가기", "").replace("PDF 다운로드", "").replace("(PDF)", "")).strip()
+    return t[:-2].strip() if t.endswith("보기") else t
+
+
+# 자료실 문서 목록(제목·분류) — 앱 CampusDocRepository.fetch를 옮긴 것. 웹앱 자료실이 docs.json으로 쓴다.
+def titled_docs():
+    docs = []
+    for label, page, latest_only in SOURCES:
         try:
-            h = requests.get(page, headers=UA, timeout=30).text
+            soup = BeautifulSoup(requests.get(page, headers=UA, timeout=30).text, "html.parser")
         except requests.RequestException as e:
             print("목록 실패", page, e, flush=True)
             continue
-        for a, b in re.findall(r'class="[^"]*uploadPdf[^"]*"[^>]*data-id="(\d+)"|data-id="(\d+)"[^>]*class="[^"]*uploadPdf[^"]*"', h):
-            r = requests.post("https://www.pknu.ac.kr/common/getMdaId.do", data={"no": a or b}, headers=UA, timeout=30).json().get("response", "").strip()
-            if r.lower().endswith(".pdf"):
-                urls.append("https://www.pknu.ac.kr/upload/" + r)
-        urls += [requests.compat.urljoin(page, p) for p in re.findall(r'href="([^"]+\.pdf)"', h)]
+        body = soup.select_one(".content_wrap") or soup.body
+        section, pending, found = "", [], []
+        for el in body.select("h4, li, div.uploadPdf[data-id]"):
+            if el.name == "h4":
+                section, pending = el.get_text(" ", strip=True), []
+            elif el.name == "li":
+                if el.find(["ul", "ol"]):  # 목록 안 목록(비교과) — 바깥 li는 안내문 전체다
+                    continue
+                title = clean_title(el.get_text(" ", strip=True))
+                if not title:
+                    continue
+                direct = next((a["href"] for a in el.select("a[href]") if ".pdf" in a["href"].lower()), None)
+                if direct:
+                    found.append((section, title, requests.compat.urljoin(page, direct)))
+                elif "보기" in el.get_text():
+                    pending.append(title)
+            elif pending:
+                title = pending.pop(0)
+                try:
+                    url = media_url(el["data-id"])
+                except Exception:
+                    url = None
+                if url:
+                    found.append((section, title, url))
+        if latest_only:  # 대학생활 가이드는 지난 학년도 문서도 다 있다 — 가장 최근 학년도만
+            years = [int(m.group(1)) for sec, _, _ in found if (m := re.search(r"(\d{4})학년도", sec))]
+            if years:
+                found = [f for f in found if (m := re.search(r"(\d{4})학년도", f[0])) and int(m.group(1)) == max(years)]
+        docs += [{"title": t, "desc": label, "url": u, "file": file_name(u)} for _, t, u in found if u.startswith("https://www.pknu.ac.kr/")]
+    return list({d["url"]: d for d in docs}.values())
+
+
+def doc_urls(docs):
+    urls = [d["url"] for d in docs]
     kt = os.path.join(os.path.dirname(__file__), "past_curriculum.txt")
     if os.path.exists(kt):
         urls += [l.strip() for l in open(kt, encoding="utf-8") if l.strip().startswith("http")]
@@ -57,7 +100,8 @@ def rows_of(pdf_bytes):
 
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
-    for url in doc_urls():
+    docs = titled_docs()
+    for url in doc_urls(docs):
         path = os.path.join(out_dir, file_name(url) + ".idx.gz")
         try:
             r = requests.get(url, headers=UA, timeout=600)
@@ -76,6 +120,20 @@ def main(out_dir):
         with gzip.open(path, "wt", encoding="utf-8", compresslevel=9) as f:
             f.write(size + "\n" + "\n".join(rows) + "\n")
         print(f"{url} → {path} 줄 {len(rows)}, {os.path.getsize(path) // 1024}KB", flush=True)
+
+
+    # 웹앱 자료실 목록: 쪽 수는 색인의 마지막 쪽 번호로(색인이 없으면 0)
+    for d in docs:
+        path = os.path.join(out_dir, d["file"] + ".idx.gz")
+        pages = 0
+        if os.path.exists(path):
+            with gzip.open(path, "rt", encoding="utf-8") as f:
+                next(f, None)
+                pages = 1 + max((int(l.split("\t", 1)[0]) for l in f if l[:1].isdigit()), default=-1)
+        d["pages"] = pages
+    with open(os.path.join(out_dir, "docs.json"), "w", encoding="utf-8") as f:
+        json.dump(docs, f, ensure_ascii=False, indent=1)
+    print(f"docs.json 문서 {len(docs)}개", flush=True)
 
 
 if __name__ == "__main__":
