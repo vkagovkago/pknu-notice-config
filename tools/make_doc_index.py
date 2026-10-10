@@ -162,8 +162,7 @@ def main(out_dir):
                 continue
         rows = rows_of(r.content)
         # 첫 줄은 PDF 크기 — 앱이 받아둔 파일과 크기가 다르면(학교가 바꿈) 이 색인을 안 쓴다
-        with gzip.open(path, "wt", encoding="utf-8", newline="
-", compresslevel=9) as f:
+        with gzip.open(path, "wt", encoding="utf-8", newline="\n", compresslevel=9) as f:
             f.write(size + "\n" + (OCR_MARK + "\n" if pytesseract else "") + "\n".join(rows) + "\n")
         print(f"{url} → {path} 줄 {len(rows)}, {os.path.getsize(path) // 1024}KB", flush=True)
 
