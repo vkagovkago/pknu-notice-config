@@ -1,7 +1,7 @@
 {
-  "versionCode": 227,
-  "versionName": "1.14.2",
+  "versionCode": 228,
+  "versionName": "1.14.3",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "과목 검색의 교양 영역·역량 필터가 0건으로 나오던 문제를 고쳤어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "주말에도 시간표 위젯에 금요일 강조가 남아 있던 문제를 고쳤어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
