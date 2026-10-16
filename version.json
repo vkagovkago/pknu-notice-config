@@ -1,7 +1,7 @@
 {
-  "versionCode": 230,
-  "versionName": "1.16.0",
+  "versionCode": 231,
+  "versionName": "1.17.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "셔틀버스·빈 강의실·이수 학점 화면에 학교 원본 페이지 버튼을 달았어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "공지 본문의 주소·전화번호를 누르면 바로 열리고, 자료실에서 자주 쓰는 기능을 위로 올렸어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
