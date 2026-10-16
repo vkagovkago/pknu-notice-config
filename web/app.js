@@ -162,6 +162,8 @@ const holidayToday = () => data.holidays?.[todayKey()];
 const routes = {};
 let current = "home";
 
+const srcLink = (url) => url ? `<p class="note"><a href="${esc(url)}" target="_blank" rel="noopener">학교 원본 페이지에서 보기 ›</a></p>` : "";
+
 async function render() {
   const [route, arg] = (location.hash.slice(1) || "home").split("/");
   current = routes[route] ? route : "home";
@@ -171,7 +173,9 @@ async function render() {
   document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("on", a.dataset.tab === (page.tab || current)));
   view.innerHTML = '<div class="empty">불러오는 중…</div>';
   await loadAll();
-  view.innerHTML = page.html(decodeURIComponent(arg || ""));
+  // src: 앱이 옮겨 보여주는 정보의 학교 원본 페이지(값이 이상하거나 빠진 것 같을 때 바로 확인)
+  view.innerHTML = page.html(decodeURIComponent(arg || ""))
+    + srcLink(typeof page.src === "function" ? page.src() : page.src);
   page.after?.(decodeURIComponent(arg || ""));
   window.scrollTo(0, 0);
 }
@@ -458,7 +462,7 @@ function favToday() {
   return (data.menu?.cafeterias || []).flatMap((c) => (c.days?.[tk] || []).flatMap((m) => m.dishes.filter(favHit).map((d) => `${c.name} · ${d}`)));
 }
 routes.menu = {
-  title: "학식",
+  title: "학식", src: "https://www.pknu.ac.kr/main/399",
   html(arg) {
     const m = data.menu;
     if (!m?.cafeterias?.length) return '<div class="empty">이번 주 식단이 아직 없어요</div>';
@@ -752,6 +756,9 @@ routes.more = {
 
 routes.shuttle = {
   title: "셔틀버스", sub: true, tab: "more",
+  // 시간표를 옮겨 적은 학교 공지(shuttle.json source). 없으면 학사공지 검색 결과
+  src: () => (data.shuttle?.source || "").startsWith("https://www.pknu.ac.kr/") ? data.shuttle.source
+    : "https://www.pknu.ac.kr/main/163?searchCondition=title&searchKeyword=%EC%85%94%ED%8B%80%EB%B2%84%EC%8A%A4",
   html() {
     const tables = data.shuttle?.tables || [], cur = shuttleTable(), minute = nowMinute();
     const weekend = dayIndex() >= 5 || holidayToday();

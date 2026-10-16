@@ -1,7 +1,7 @@
 {
-  "versionCode": 229,
-  "versionName": "1.15.0",
+  "versionCode": 230,
+  "versionName": "1.16.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "알림 설정을 공지·학업·학식 세 묶음으로 정리하고, 연속 수업 알림이 빠지던 문제를 고쳤어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "셔틀버스·빈 강의실·이수 학점 화면에 학교 원본 페이지 버튼을 달았어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }

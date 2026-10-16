@@ -320,6 +320,7 @@ const buildingOf = (room) => room.split("-")[0];
 const buildingOrder = (a, b) => a[0].localeCompare(b[0]) || (parseInt(a.slice(1)) || 0) - (parseInt(b.slice(1)) || 0);
 routes.rooms = {
   title: "빈 강의실", sub: true, tab: "more",
+  src: "https://irumi.pknu.ac.kr/nxui/launch.html?screenid=Phone_screen_quick&menuId=U020913", // 이루미 개설 강좌
   html() { return '<div id="rv"><div class="empty">불러오는 중…</div></div>'; },
   async after() {
     let rd;
@@ -570,6 +571,7 @@ const bar = (earned, need) => (need ? `<div class="bar"><i style="width:${Math.m
 
 routes.credits = {
   title: "학점·졸업 요건", sub: true, tab: "timetable",
+  src: "https://www.pknu.ac.kr/main/94", // 졸업 안내
   html() { return '<div id="cv"><div class="empty">계산하는 중…</div></div>'; },
   async after() {
     await fillMeta();
