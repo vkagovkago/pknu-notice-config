@@ -1,6 +1,12 @@
 /* 앱과 같은 KoPub World 돋움(앱 res/font에서 KS X 1001 한글 2350자+영숫자만 남겨 woff2로). 없는 글자는 시스템 글꼴로 */
 @font-face { font-family: "KoPub Dotum"; src: url(fonts/kopub-medium.woff2) format("woff2"); font-weight: 400 500; font-display: swap; }
 @font-face { font-family: "KoPub Dotum"; src: url(fonts/kopub-bold.woff2) format("woff2"); font-weight: 600 800; font-display: swap; }
+/* 굵기 설정은 앱 Fonts.kt처럼 같은 굵기 요청에 물릴 파일만 한 칸씩 민다(쓰는 쪽 글꼴만 받는다) */
+@font-face { font-family: "KoPub Thin"; src: url(fonts/kopub-light.woff2) format("woff2"); font-weight: 100 500; font-display: swap; }
+@font-face { font-family: "KoPub Thin"; src: url(fonts/kopub-medium.woff2) format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "KoPub Thin"; src: url(fonts/kopub-bold.woff2) format("woff2"); font-weight: 700 800; font-display: swap; }
+@font-face { font-family: "KoPub Thick"; src: url(fonts/kopub-medium.woff2) format("woff2"); font-weight: 100 300; font-display: swap; }
+@font-face { font-family: "KoPub Thick"; src: url(fonts/kopub-bold.woff2) format("woff2"); font-weight: 400 800; font-display: swap; }
 :root {
   --bg: #f4f6fa; --card: #ffffff; --text: #16202e; --sub: #6b7584; --line: #e3e7ee;
   --primary: #1E63C7; --primary-soft: #e6effb; --green: #1B7A46; --green-soft: #e3f3ea;
@@ -29,6 +35,8 @@ body {
   font-size: 15px; line-height: 1.5; -webkit-tap-highlight-color: transparent;
   padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
+:root[data-weight="thin"] body { font-family: "KoPub Thin", -apple-system, "Apple SD Gothic Neo", sans-serif; }
+:root[data-weight="thick"] body { font-family: "KoPub Thick", -apple-system, "Apple SD Gothic Neo", sans-serif; }
 a { color: var(--primary); text-decoration: none; }
 button { font: inherit; color: inherit; }
 
@@ -214,3 +222,14 @@ body.root main { padding-top: calc(20px + env(safe-area-inset-top)); }
 .profile .grow { flex: 1; }
 .profile .sub { color: var(--on-banner); opacity: .75; }
 .gap { height: 16px; }
+
+/* 홈 학식 카드: 식당 하나씩 넘기기(앱 MenuCard) */
+.cafnav { display: flex; align-items: center; gap: 4px; }
+.cafnav b { flex: 1; text-align: center; font-size: 14px; }
+.cafnav button { border: 0; background: none; padding: 2px; cursor: pointer; color: var(--text); display: flex; }
+.cafnav button:disabled { opacity: .3; cursor: default; }
+.cafpos { text-align: center; font-size: 11px; color: var(--sub); margin-bottom: 10px; }
+.meal2 { margin-top: 10px; }
+.meal2:first-child { margin-top: 0; }
+.meal2 b { font-size: 11px; }
+.meal2 p { margin: 2px 0 0; font-size: 13px; line-height: 1.45; }

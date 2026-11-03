@@ -19,6 +19,7 @@ const ICONS = {
   settings: "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
   refresh: "M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
   chev: "M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
+  chevL: "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z",
   open: "M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z",
   school: "M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9L12 3z",
   bank: "M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z",
@@ -305,8 +306,10 @@ routes.home = {
         <div class="btns"><button class="btn ghost" id="regics">내 차례 알람을 캘린더에 넣기</button></div>
         <p class="note">학년별 시작 시각은 학사공지·강의편람에서 확인해 주세요.</p></section>`) : ""}
       ${hidden.has("menu") ? "" : `<section class="card">${cardHead("food", "var(--orange)", "오늘의 학식", "#menu", "주간 보기")}
-        ${meals.length ? meals.map((c) => `<div class="row"><div class="grow"><b>${esc(c.name)}</b>
-          ${c.meals.map((m) => `<div class="sub">${esc(m.name)}: ${esc(m.dishes.slice(0, 4).join(", "))}${m.dishes.length > 4 ? " …" : ""}</div>`).join("")}</div></div>`).join("")
+        ${meals.length ? `<div class="cafnav"><button id="cafprev" aria-label="이전 식당">${icon("chevL")}</button><b id="cafname"></b>
+          <button id="cafnext" aria-label="다음 식당">${icon("chev")}</button></div>${meals.length > 1 ? '<div class="cafpos" id="cafpos"></div>' : '<div class="cafpos"></div>'}
+          ${meals.map((c, i) => `<div class="caf" data-caf="${i}" data-name="${esc(c.name)}" hidden>${c.meals.filter((m) => m.dishes.length).map((m) =>
+            `<div class="meal2"><b style="color:${mealTint(m.name)}">${esc(m.name)}</b><p>${esc(m.dishes.join(" · "))}</p></div>`).join("")}</div>`).join("")}`
           : '<div class="sub" style="padding:8px 0">오늘은 올라온 식단이 없어요.</div>'}
       </section>`}
       ${show("schedule", `<section class="card">${cardHead("cal", "var(--accent)", "다가오는 학사일정", "#schedule", "월별 보기")}
@@ -323,11 +326,28 @@ routes.home = {
   },
   after() {
     $("#hrefresh").onclick = refresh;
+    const cafs = [...view.querySelectorAll("[data-caf]")];
+    const showCaf = () => {
+      if (cafIdx > cafs.length - 1) cafIdx = 0; // 식당 수가 바뀌면(자정·새로고침) 처음으로
+      cafs.forEach((c, i) => (c.hidden = i !== cafIdx));
+      $("#cafname").textContent = cafs[cafIdx].dataset.name;
+      $("#cafprev").disabled = cafIdx === 0; $("#cafnext").disabled = cafIdx === cafs.length - 1;
+      if ($("#cafpos")) $("#cafpos").textContent = `${cafIdx + 1} / ${cafs.length}`;
+    };
+    if (cafs.length) {
+      $("#cafprev").onclick = () => { cafIdx--; showCaf(); };
+      $("#cafnext").onclick = () => { cafIdx++; showCaf(); };
+      showCaf();
+    }
     $("#regics") && ($("#regics").onclick = () => courseRegAlarm(courseRegEvent()));
     $("#bnow") && ($("#bnow").onclick = () => { exportBackup(); render(); });
     $("#blater") && ($("#blater").onclick = () => { store.set("backupSnooze", Date.now() + 7 * DAY_MS); render(); });
   },
 };
+
+let cafIdx = 0; // 홈 학식 카드에서 보고 있는 식당
+// 끼니 색(앱 MenuCard.mealTint): 아침/조식·점심/중식·저녁/석식
+const mealTint = (n) => (/아침|조/.test(n) ? "#D9A32A" : /점심|중/.test(n) ? "#E07A2F" : /저녁|석/.test(n) ? "#5B8DEF" : "var(--sub)");
 
 // 수강신청 알리미(앱 CourseReg): 학사일정 제목에 이 말이 든 것 중 끝나지 않은 가장 이른 일정
 const REG_WORDS = ["수강신청", "수강변경", "수강취소", "현금등록"];
@@ -827,7 +847,8 @@ routes.campus = {
       <div class="stitle">${icon("qa")}도움</div>
       <div class="mcard">
         ${menuRow("#faq", "qa", window.FIREBASE_CONFIG ? "자주 묻는 질문 · AI 챗봇" : "자주 묻는 질문", "앱 사용법 · 학사 · 학교생활 Q&A")}
-        ${menuRow("#links", "pc", "학교 사이트 바로가기", "이루미·강의계획서 조회·학사공지·도서관")}
+        ${menuRow("#faq/학사행정시스템", "pc", "학사행정정보시스템 사용법", "휴학·복학·성적·장학·증명서 메뉴 찾아가기")}
+        ${menuRow("#links", "link", "학교 사이트 바로가기", "이루미·강의계획서 조회·학사공지·도서관")}
       </div>
       <p class="note">캠퍼스맵은 앱 안에서 바로 보고, 나머지는 학교 홈페이지를 그대로 열어요.</p>`;
   },
@@ -859,7 +880,7 @@ routes.setup = {
         ${menuRow("#keywords", "label", "키워드 알림", "받고 싶은 말, 거를 말")}
       </div><div class="gap"></div>
       <div class="mcard">
-        ${menuRow("#settings", "palette", "화면", "테마, 글자 크기, 홈 화면 카드")}
+        ${menuRow("#settings", "palette", "화면", "테마, 글자 크기·굵기, 홈 화면 카드")}
         ${menuRow("#settings/backup", "save", "설정 백업", "내보내기, 가져오기")}
         ${menuRow("#", "done", "읽음 기록", "읽음 표시 초기화", { attrs: 'id="clearread"' })}
       </div><div class="gap"></div>
@@ -911,16 +932,18 @@ routes.shuttle = {
 };
 
 routes.faq = {
-  title: "자주 묻는 질문", sub: true, tab: "campus",
-  html() {
+  sub: true, tab: "campus",
+  title: (arg) => (arg === "학사행정시스템" ? "학사행정정보시스템 사용법" : "자주 묻는 질문"),
+  html(arg) {
     const items = data.faq?.items || [], cats = ["전체", ...new Set(items.map((i) => i.category))];
+    const start = cats.includes(arg) ? arg : "전체";
     return `<input type="search" id="fq" placeholder="궁금한 것 검색 (예: 휴학, 장학금)">
-      <div class="chips">${cats.map((c, i) => `<button class="chip ${i === 0 ? "on" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>
+      <div class="chips">${cats.map((c) => `<button class="chip ${c === start ? "on" : ""}" data-c="${esc(c)}">${esc(c)}</button>`).join("")}</div>
       <section class="card" id="flist"></section>
       ${window.FIREBASE_CONFIG ? '<a class="btn ghost" href="#chat">🤖 찾는 답이 없으면 AI에게 묻기</a>' : ""}`;
   },
-  after() {
-    let cat = "전체";
+  after(arg) {
+    let cat = (data.faq?.items || []).some((i) => i.category === arg) ? arg : "전체";
     const draw = () => {
       const q = $("#fq").value.trim().replace(/\s+/g, "");
       const list = (data.faq?.items || []).filter((i) => (cat === "전체" || i.category === cat)

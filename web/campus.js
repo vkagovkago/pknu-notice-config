@@ -359,10 +359,13 @@ async function docPage(doc) {
 // ================= 화면·백업 설정 =================
 const HOME_CARDS = [["chat", "AI 챗봇 버튼"], ["week", "이번 주 요약"], ["reg", "수강신청 알리미"], ["menu", "오늘의 학식"], ["schedule", "다가오는 학사일정"], ["school", "학교 공지사항"], ["dept", "학과 공지사항"]];
 const SCALES = [[0.9, "작게"], [1, "보통"], [1.15, "크게"], [1.3, "아주 크게"]];
+const WEIGHTS = [["thin", "얇게"], ["normal", "기본"], ["thick", "굵게"]];
 function applyLook() {
   const t = store.get("theme", "auto");
   if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
   view.style.zoom = store.get("scale", 1);
+  const w = store.get("weight", "normal");
+  if (w === "normal") delete document.documentElement.dataset.weight; else document.documentElement.dataset.weight = w;
 }
 // 개인 기록만 백업한다(알림 토큰·AI 사용 횟수 같은 이 기기 값은 뺀다)
 const NOT_BACKED = ["pushOn", "pushToken", "aiUse", "hideInstall", "lastBackup", "backupBase", "backupSnooze"];
@@ -383,6 +386,8 @@ routes.settings = {
     const t = store.get("theme", "auto"), sc = store.get("scale", 1), hidden = new Set(store.get("homeHidden", []));
     return (arg === "backup" ? "" : `<section class="card"><h2>테마</h2><div class="chips">${[["auto", "기기 설정 따라"], ["light", "밝게"], ["dark", "어둡게"]].map(([v, l]) => `<button class="chip ${t === v ? "on" : ""}" data-theme="${v}">${l}</button>`).join("")}</div></section>
       <section class="card"><h2>글자 크기</h2><div class="chips">${SCALES.map(([v, l]) => `<button class="chip ${sc === v ? "on" : ""}" data-scale="${v}">${l}</button>`).join("")}</div></section>
+      <section class="card"><h2>글자 굵기</h2><p class="sub" style="margin:0 0 8px">어두운 화면에서 글자가 흐려 보이면 굵게를 써보세요.</p>
+        <div class="chips">${WEIGHTS.map(([v, l]) => `<button class="chip ${store.get("weight", "normal") === v ? "on" : ""}" data-weight="${v}">${l}</button>`).join("")}</div></section>
       <section class="card"><h2>홈 화면 카드</h2>${HOME_CARDS.map(([k, l]) => `<label class="row"><input type="checkbox" data-home="${k}" ${hidden.has(k) ? "" : "checked"}><div class="grow">${l}</div></label>`).join("")}</section>`)
       + (arg !== "backup" ? "" : `<section class="card"><h2>백업</h2>${storageNote()}<p class="sub">시간표·학점·담은 공지·설정을 파일로 받아 두었다가 다른 폰·브라우저에서 가져올 수 있어요. 안드로이드 앱의 설정 백업 파일도 가져올 수 있어요.</p>
         <p class="sub">마지막 백업: <b>${store.get("lastBackup", 0) ? new Date(store.get("lastBackup", 0)).toLocaleDateString("ko-KR") : "없음"}</b> · 오래 보관 요청: <b id="persist">확인 중</b></p>
@@ -393,6 +398,7 @@ routes.settings = {
   after() {
     view.querySelectorAll("[data-theme]").forEach((b) => (b.onclick = () => { store.set("theme", b.dataset.theme); applyLook(); render(); }));
     view.querySelectorAll("[data-scale]").forEach((b) => (b.onclick = () => { store.set("scale", +b.dataset.scale); applyLook(); render(); }));
+    view.querySelectorAll("[data-weight]").forEach((b) => (b.onclick = () => { store.set("weight", b.dataset.weight); applyLook(); render(); }));
     view.querySelectorAll("[data-home]").forEach((cb) => (cb.onchange = () => {
       store.set("homeHidden", [...view.querySelectorAll("[data-home]")].filter((x) => !x.checked).map((x) => x.dataset.home));
     }));
