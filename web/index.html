@@ -13,6 +13,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preload" href="fonts/kopub-medium.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -23,11 +24,10 @@
 </header>
 <main id="view" tabindex="-1"></main>
 <nav class="tabs" aria-label="메뉴">
-  <a href="#home" data-tab="home"><span>🏠</span>홈</a>
-  <a href="#notices" data-tab="notices"><span>🔔</span>공지</a>
-  <a href="#menu" data-tab="menu"><span>🍚</span>학식</a>
-  <a href="#timetable" data-tab="timetable"><span>🗓️</span>시간표</a>
-  <a href="#more" data-tab="more"><span>☰</span>더보기</a>
+  <a href="#home" data-tab="home" data-icon="home">홈</a>
+  <a href="#notices" data-tab="notices" data-icon="bell">공지사항</a>
+  <a href="#campus" data-tab="campus" data-icon="book">자료실</a>
+  <a href="#setup" data-tab="setup" data-icon="settings">설정</a>
 </nav>
 <script src="firebase-config.js"></script>
 <script src="app.js" defer></script>

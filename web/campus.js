@@ -37,7 +37,7 @@ document.addEventListener("click", async (e) => {
 });
 
 routes.map = {
-  title: "캠퍼스 지도", sub: true, tab: "more",
+  title: "캠퍼스 지도", sub: true, tab: "campus",
   html() { return '<div id="mv"><div class="empty">불러오는 중…</div></div>'; },
   async after() {
     let list = [];
@@ -66,7 +66,7 @@ routes.map = {
 
 // ================= 도서관 =================
 routes.library = {
-  title: "도서관", sub: true, tab: "more",
+  title: "도서관", sub: true, tab: "campus",
   html() {
     return `<section class="card"><h2>자료 검색</h2>
         <form id="lf" class="chatbar" style="position:static;padding:0"><input type="search" id="lq" placeholder="책 제목·저자·키워드"><button class="btn">검색</button></form>
@@ -148,7 +148,7 @@ function courseRegAlarm(ev) {
 // ================= 학사일정: 목록·달력 =================
 let calMonth = null;
 routes.schedule = {
-  title: "학사일정", sub: true, tab: "more",
+  title: "학사일정", sub: true, tab: "campus",
   html() {
     const mode = store.get("schedView", "list"), tk = todayKey(), events = data.schedule?.events || [];
     const tabs = `<div class="chips"><button class="chip ${mode === "list" ? "on" : ""}" data-sv="list">목록</button><button class="chip ${mode === "cal" ? "on" : ""}" data-sv="cal">달력</button>
@@ -192,7 +192,7 @@ routes.schedule = {
 // ================= 학과 연락처 (앱 DeptContactScreen) =================
 // 공지 게시판 페이지(대개 푸터)에 적힌 학과 사무실 전화. Actions가 공지를 받을 때 같이 뽑는다(이메일은 안 뽑는다).
 routes.contacts = {
-  title: "학과 연락처", sub: true, tab: "more",
+  title: "학과 연락처", sub: true, tab: "campus",
   html() {
     return `<input type="search" id="cq" placeholder="학과·단과대 이름" value="">
       <div id="cl"></div>
@@ -215,7 +215,7 @@ routes.contacts = {
 
 // ================= 학교 사이트 바로가기 =================
 routes.links = {
-  title: "학교 사이트", sub: true, tab: "more",
+  title: "학교 사이트", sub: true, tab: "campus",
   html() {
     const L = [
       ["학사", [["이루미 (학사행정정보시스템)", "https://irumi.pknu.ac.kr/"], ["이루미 강의계획서 조회", "https://irumi.pknu.ac.kr/nxui/launch.html?screenid=Phone_screen_quick&menuId=U020913"],
@@ -295,7 +295,7 @@ function docHits(doc, hits, q, limit) {
 }
 
 routes.docs = {
-  title: "자료실", sub: true, tab: "more",
+  title: "자료실", sub: true, tab: "campus",
   html(file) {
     return `<div id="dv"><div class="empty">불러오는 중…</div></div>`;
   },
@@ -357,7 +357,7 @@ async function docPage(doc) {
 }
 
 // ================= 화면·백업 설정 =================
-const HOME_CARDS = [["chat", "AI 챗봇 배너"], ["week", "이번 주 요약"], ["reg", "수강신청 알리미"], ["menu", "오늘 학식"], ["schedule", "다가오는 학사일정"], ["notices", "최근 공지"]];
+const HOME_CARDS = [["chat", "AI 챗봇 버튼"], ["week", "이번 주 요약"], ["reg", "수강신청 알리미"], ["menu", "오늘의 학식"], ["schedule", "다가오는 학사일정"], ["school", "학교 공지사항"], ["dept", "학과 공지사항"]];
 const SCALES = [[0.9, "작게"], [1, "보통"], [1.15, "크게"], [1.3, "아주 크게"]];
 function applyLook() {
   const t = store.get("theme", "auto");
@@ -378,17 +378,17 @@ function exportBackup() {
   toast("백업 파일을 받았어요. 파일 앱·클라우드에 보관해 두세요");
 }
 routes.settings = {
-  title: "화면·백업", sub: true, tab: "more",
-  html() {
+  title: (arg) => (arg === "backup" ? "설정 백업" : "화면"), sub: true, tab: "setup",
+  html(arg) {
     const t = store.get("theme", "auto"), sc = store.get("scale", 1), hidden = new Set(store.get("homeHidden", []));
-    return `<section class="card"><h2>테마</h2><div class="chips">${[["auto", "기기 설정 따라"], ["light", "밝게"], ["dark", "어둡게"]].map(([v, l]) => `<button class="chip ${t === v ? "on" : ""}" data-theme="${v}">${l}</button>`).join("")}</div></section>
+    return (arg === "backup" ? "" : `<section class="card"><h2>테마</h2><div class="chips">${[["auto", "기기 설정 따라"], ["light", "밝게"], ["dark", "어둡게"]].map(([v, l]) => `<button class="chip ${t === v ? "on" : ""}" data-theme="${v}">${l}</button>`).join("")}</div></section>
       <section class="card"><h2>글자 크기</h2><div class="chips">${SCALES.map(([v, l]) => `<button class="chip ${sc === v ? "on" : ""}" data-scale="${v}">${l}</button>`).join("")}</div></section>
-      <section class="card"><h2>홈 화면 카드</h2>${HOME_CARDS.map(([k, l]) => `<label class="row"><input type="checkbox" data-home="${k}" ${hidden.has(k) ? "" : "checked"}><div class="grow">${l}</div></label>`).join("")}</section>
-      <section class="card"><h2>백업</h2>${storageNote()}<p class="sub">시간표·학점·담은 공지·설정을 파일로 받아 두었다가 다른 폰·브라우저에서 가져올 수 있어요. 안드로이드 앱의 설정 백업 파일도 가져올 수 있어요.</p>
+      <section class="card"><h2>홈 화면 카드</h2>${HOME_CARDS.map(([k, l]) => `<label class="row"><input type="checkbox" data-home="${k}" ${hidden.has(k) ? "" : "checked"}><div class="grow">${l}</div></label>`).join("")}</section>`)
+      + (arg !== "backup" ? "" : `<section class="card"><h2>백업</h2>${storageNote()}<p class="sub">시간표·학점·담은 공지·설정을 파일로 받아 두었다가 다른 폰·브라우저에서 가져올 수 있어요. 안드로이드 앱의 설정 백업 파일도 가져올 수 있어요.</p>
         <p class="sub">마지막 백업: <b>${store.get("lastBackup", 0) ? new Date(store.get("lastBackup", 0)).toLocaleDateString("ko-KR") : "없음"}</b> · 오래 보관 요청: <b id="persist">확인 중</b></p>
         <div class="btns"><button class="btn" id="bexp">백업 파일 받기</button><label class="btn ghost">백업 가져오기<input type="file" id="bimp" accept=".json,application/json" hidden></label></div></section>
       <section class="card"><h2>데이터 모두 지우기</h2><p class="sub">이 브라우저에 저장된 시간표·학점·설정을 전부 지워요. 되돌릴 수 없어요.</p>
-        <button class="btn danger" id="wipe">모두 지우기</button></section>`;
+        <button class="btn danger" id="wipe">모두 지우기</button></section>`);
   },
   after() {
     view.querySelectorAll("[data-theme]").forEach((b) => (b.onclick = () => { store.set("theme", b.dataset.theme); applyLook(); render(); }));
@@ -396,6 +396,7 @@ routes.settings = {
     view.querySelectorAll("[data-home]").forEach((cb) => (cb.onchange = () => {
       store.set("homeHidden", [...view.querySelectorAll("[data-home]")].filter((x) => !x.checked).map((x) => x.dataset.home));
     }));
+    if (!$("#bexp")) return;
     $("#bexp").onclick = () => { exportBackup(); render(); };
     (navigator.storage?.persisted?.() || Promise.resolve(null)).then((ok) => {
       if ($("#persist")) $("#persist").textContent = ok ? "허용됨" : ok === false ? (isIOS && !isStandalone() ? "안 됨 (홈 화면 아이콘으로 쓰세요)" : "안 됨") : "지원 안 함";
@@ -421,7 +422,7 @@ routes.settings = {
 
 // ================= 변경 내역 · 리뷰 =================
 routes.news = {
-  title: "변경 내역", sub: true, tab: "more",
+  title: "변경 내역", sub: true, tab: "setup",
   html() { return '<div id="nv"><div class="empty">불러오는 중…</div></div>'; },
   async after() {
     let log = [];
@@ -435,7 +436,7 @@ routes.news = {
 // 리뷰는 구글 폼으로(앱 SettingsReview와 같은 폼). 메일 주소는 어느 쪽에도 나오지 않는다
 const REVIEW_FORM = "1FAIpQLSfZUOEvlvL_N4pbtNwYheVMKKKuWBMYp25_raw2Wy7I7oVJvg";
 routes.review = {
-  title: "리뷰 남기기", sub: true, tab: "more",
+  title: "리뷰 남기기", sub: true, tab: "setup",
   html() {
     const ua = navigator.userAgent, dev = /iPhone|iPad/.test(ua) ? "아이폰" : /Android/.test(ua) ? "안드로이드" : "PC";
     const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;

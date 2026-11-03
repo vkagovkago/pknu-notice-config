@@ -90,8 +90,9 @@ const sq = { text: "", field: "name", college: "", dept: "", grade: "", cat: "",
 let results = [];
 const CYBER = "@cyber";
 routes.search = {
-  title: "과목 검색", sub: true, tab: "timetable",
+  title: "과목 검색", sub: true, tab: "campus",
   html(arg) {
+    if (arg === "cyber") sq.college = CYBER;
     const wiz = arg.startsWith("wiz:");
     const opt = (v, l, cur) => `<option value="${esc(v)}" ${v === cur ? "selected" : ""}>${esc(l)}</option>`;
     return `<p class="sub">${termLabel(viewTerm)} 개설 과목${wiz ? " · <b>마법사 후보 고르기</b>" : ""}</p>
@@ -257,7 +258,7 @@ const SORTS = {
 };
 let plans = [];
 routes.wizard = {
-  title: "시간표 마법사", sub: true, tab: "timetable",
+  title: "시간표 마법사", sub: true, tab: "campus",
   html() {
     return `<p class="sub">${termLabel(viewTerm)}</p>
       <p class="note">그룹마다 후보(같은 과목의 여러 분반, 또는 아무거나 하나만 들으면 되는 과목들)를 넣으면, 그룹마다 하나씩 골라 시간이 안 겹치는 조합을 전부 찾아요.</p>
@@ -319,7 +320,7 @@ routes.wizard = {
 const buildingOf = (room) => room.split("-")[0];
 const buildingOrder = (a, b) => a[0].localeCompare(b[0]) || (parseInt(a.slice(1)) || 0) - (parseInt(b.slice(1)) || 0);
 routes.rooms = {
-  title: "빈 강의실", sub: true, tab: "more",
+  title: "빈 강의실", sub: true, tab: "campus",
   src: "https://irumi.pknu.ac.kr/nxui/launch.html?screenid=Phone_screen_quick&menuId=U020913", // 이루미 개설 강좌
   html() { return '<div id="rv"><div class="empty">불러오는 중…</div></div>'; },
   async after() {
@@ -409,7 +410,7 @@ function taskDialog(t, course = "") {
   };
 }
 routes.tasks = {
-  title: "시험·과제", sub: true, tab: "timetable",
+  title: "시험·과제", sub: true, tab: "campus",
   html() {
     const list = termTasks(viewTerm), open = list.filter((t) => !t.done), done = list.filter((t) => t.done);
     return `<p class="sub">${termLabel(viewTerm)}</p>
@@ -570,7 +571,7 @@ function importCredits(raw) {
 const bar = (earned, need) => (need ? `<div class="bar"><i style="width:${Math.min(100, (earned / need) * 100)}%"></i></div>` : "");
 
 routes.credits = {
-  title: "학점·졸업 요건", sub: true, tab: "timetable",
+  title: "학점·졸업 요건", sub: true, tab: "campus",
   src: "https://www.pknu.ac.kr/main/94", // 졸업 안내
   html() { return '<div id="cv"><div class="empty">계산하는 중…</div></div>'; },
   async after() {
@@ -758,7 +759,7 @@ function gradLine(d) {
 }
 
 routes.curriculum = {
-  title: "교육과정", sub: true, tab: "more",
+  title: "교육과정", sub: true, tab: "campus",
   html() { return '<div id="cuv"><div class="empty">불러오는 중…</div></div>'; },
   async after() {
     let ci, cy = { docs: [] }, gd = null;

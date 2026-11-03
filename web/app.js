@@ -10,6 +10,49 @@ const PALETTE = ["#5B8DEF", "#2BB673", "#EF8354", "#B15BEF", "#EF5B5B", "#34B3C2
 const FIREBASE_JS = "12.19.0"; // https://www.gstatic.com/firebasejs/<버전>/...
 const ANDROID_APK = "https://vkagovkago.github.io/pknu-notice-config/download/";
 
+// 앱(Compose Material Icons)과 같은 아이콘. 24x24 path
+const ICONS = {
+  home: "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z",
+  bell: "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z",
+  bellNone: "M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z",
+  book: "M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z",
+  settings: "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+  refresh: "M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
+  chev: "M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",
+  open: "M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z",
+  school: "M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9L12 3z",
+  bank: "M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z",
+  food: "M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z",
+  cal: "M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z",
+  note: "M17 10H7v2h10v-2zm2-7h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zm-5-5H7v2h7v-2z",
+  week: "M6 5H3c-.55 0-1 .45-1 1v12c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V6c0-.55-.45-1-1-1zm14 0h-3c-.55 0-1 .45-1 1v12c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V6c0-.55-.45-1-1-1zm-7 0h-3c-.55 0-1 .45-1 1v12c0 .55.45 1 1 1h3c.55 0 1-.45 1-1V6c0-.55-.45-1-1-1z",
+  bus: "M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z",
+  room: "M14 6v15H3v-2h2V3h9v1h5v15h2v2h-4V6h-3zm-4 5v2h2v-2h-2z",
+  map: "m20.5 3-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z",
+  seat: "M4 18v3h3v-3h10v3h3v-6H4zm15-8h3v3h-3zM2 10h3v3H2zm15 3H7V5c0-1.1.9-2 2-2h6c1.1 0 2 .9 2 2v8z",
+  search: "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
+  call: "M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z",
+  pc: "M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z",
+  qa: "M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z",
+  spark: "m19 9 1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z",
+  label: "M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 1.99 2 1.99L16 19c.67 0 1.27-.33 1.63-.84L22 12l-4.37-6.16z",
+  palette: "M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z",
+  save: "M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67 2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z",
+  done: "M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41 6 19l1.41-1.41L1.83 12 .41 13.41z",
+  review: "M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 14v-2.47l6.88-6.88c.2-.2.51-.2.71 0l1.77 1.77c.2.2.2.51 0 .71L8.47 14H6zm12 0h-7.5l2-2H18v2z",
+  info: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+  history: "M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z",
+  heart: "m12 21.35-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z",
+  link: "M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z",
+};
+const icon = (name) => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[name]}"/></svg>`;
+// 카드 제목(앱 SectionCard/MenuCard): 색 동그라미 아이콘 + 제목 + 오른쪽 더보기
+const cardHead = (ic, color, title, href, more = "더보기", big = false) =>
+  `<h2 class="chead"><span class="dot${big ? " big" : ""}" style="background:${color}">${icon(ic)}</span>${title}${href ? `<a class="more" href="${href}" style="color:${color}">${more}${icon("chev")}</a>` : ""}</h2>`;
+// 메뉴 줄(앱 RowItem): 아이콘 · 제목/설명 · 화살표(밖으로 나가면 새 창 아이콘)
+const menuRow = (href, ic, name, desc, { blue = false, ext = false, attrs = "" } = {}) =>
+  `<a class="mrow${blue ? " blue" : ""}" href="${href}"${ext ? ' target="_blank" rel="noopener"' : ""} ${attrs}>${icon(ic)}<div class="grow"><div>${name}</div>${desc ? `<div class="sub">${desc}</div>` : ""}</div>${icon(ext ? "open" : "chev")}</a>`;
+
 // ---------- 저장 ----------
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -104,6 +147,25 @@ function noticeRow(n, showBoard = true) {
     <div class="sub">${showBoard ? esc(n.board) + " · " : ""}${esc(n.date)}</div></a>
     <button class="star ${bm ? "on" : ""}" data-bm="${esc(k)}" aria-label="${bm ? "담기 취소" : "담기"}">${bm ? "★" : "☆"}</button></div>`;
 }
+// 앱 shortenTag: "도서관 공지사항" → "도서관", "공과대학(기계·에너지전공)" → "에너지전공"
+function shortTag(name) {
+  const m = name.match(/^([^(]*)\((.*)\)\s*$/);
+  const outside = (m ? m[1] : name).trim(), inside = m ? m[2].trim() : "";
+  const trimmed = outside.replace(/ 공지사항$/, "").trim() || outside;
+  return inside.endsWith("전공") ? inside.split("·").find((x) => x.endsWith("전공")) : trimmed;
+}
+// 홈 카드 공지 한 줄(앱 HomeScreen NoticeLine): 안 읽은 빨간 점 · [게시판] [고정] 날짜 / 제목 두 줄
+function homeNotice(n, color) {
+  const k = bmKey(n);
+  shown[k] = n;
+  return `<a class="hn ${readSet().has(k) ? "read" : ""}" href="${esc(n.url)}" target="_blank" rel="noopener" data-read="${esc(k)}"><i class="ud"></i><div class="grow">
+    <div class="top1"><span style="color:${color}">[${esc(shortTag(n.board))}]</span>${n.pinned ? '<span class="pin">[고정]</span>' : ""}<span class="d">${esc(n.date)}</span></div>
+    <div class="t">${deadlineBadge(deadlineOf(n.title, n.date || ""))}${highlight(n.title)}</div></div></a>`;
+}
+const relTime = (iso) => {
+  const m = Math.floor((Date.now() - new Date(iso)) / 60000);
+  return isNaN(m) ? "" : m < 1 ? "방금" : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 전` : `${Math.floor(m / 1440)}일 전`;
+};
 function toggleBookmark(k, btn) {
   const all = bookmarks();
   if (all[k]) delete all[k]; else if (shown[k]) all[k] = shown[k]; else return;
@@ -168,8 +230,9 @@ async function render() {
   const [route, arg] = (location.hash.slice(1) || "home").split("/");
   current = routes[route] ? route : "home";
   const page = routes[current];
-  $("#title").textContent = page.title;
+  $("#title").textContent = typeof page.title === "function" ? page.title(decodeURIComponent(arg || "")) : page.title;
   $("#back").hidden = !page.sub;
+  document.body.classList.toggle("root", !page.sub);
   document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("on", a.dataset.tab === (page.tab || current)));
   view.innerHTML = '<div class="empty">불러오는 중…</div>';
   await loadAll();
@@ -207,7 +270,10 @@ routes.home = {
     const tk = todayKey();
     const meals = (data.menu?.cafeterias || []).map((c) => ({ name: c.name, meals: c.days?.[tk] || [] })).filter((c) => c.meals.length);
     const events = upcomingEvents().slice(0, 4);
-    const notices = noticesOf(myBoards()).filter((n) => !n.pinned).sort(byNewest).slice(0, 6);
+    // 앱처럼 학사공지 5개와 관심 학과 공지 5개를 따로(학사공지만 고른 상태면 학과 카드는 고르기 안내)
+    const school = noticesOf(["academic"]).sort(byNewest).slice(0, 5);
+    const deptIds = myBoards().filter((id) => id !== "academic");
+    const dept = deptIds.length ? noticesOf(deptIds).sort(byNewest).slice(0, 5) : null;
     const exam = examLine();
     const gap = hol ? null : gapMinutes(today, minute);
     const fav = favToday();
@@ -217,35 +283,46 @@ routes.home = {
     const hidden = new Set(store.get("homeHidden", []));
     const show = (id, html) => (hidden.has(id) ? "" : html);
 
-    return `${backupCard()}
-      ${!window.FIREBASE_CONFIG ? "" : show("chat", '<a class="card banner" href="#chat">🤖 <b>AI 챗봇</b>에게 학교생활 물어보기 ›</a>')}
-      <section class="card"><h2>오늘 · ${now.getMonth() + 1}월 ${now.getDate()}일 (${DAYS[di]})</h2>
-        <div class="row"><span>🗓️</span><div class="grow">${cls}</div></div>
-        ${gap ? `<a class="row" href="#rooms" style="color:inherit"><span>🚪</span><div class="grow">공강 ${durationLabel(gap)} — 빈 강의실 찾기</div></a>` : ""}
-        <a class="row" href="#shuttle" style="color:inherit"><span>🚌</span><div class="grow">${bus}</div></a>
-        ${fav.length ? `<a class="row" href="#menu" style="color:inherit"><span>❤️</span><div class="grow">오늘 학식에 좋아하는 메뉴: ${esc(fav.slice(0, 3).join(", "))}${fav.length > 3 ? ` 외 ${fav.length - 3}개` : ""}</div></a>` : ""}
-        ${exam ? `<a class="row" href="#schedule" style="color:inherit"><span>📝</span><div class="grow">${exam}</div></a>` : ""}
-        ${soon.map((t) => `<a class="row" href="#tasks" style="color:inherit"><span>📌</span><div class="grow">${esc(t.course)} ${esc(t.kind)}${t.title ? " · " + esc(t.title) : ""} <span class="badge red">${taskBadge(t)}</span></div></a>`).join("")}
+    const unread = noticesOf(myBoards()).some((n) => !readSet().has(bmKey(n)));
+    const upd = relTime(data.notices?.updated);
+    return `<div class="hhead"><img src="icons/icon-192.png" alt=""><div class="grow"><b>부경대학교</b>공지사항 알리미</div>
+        <button id="hrefresh" aria-label="새로고침">${icon("refresh")}</button>
+        <a href="#notices" aria-label="공지사항 보기">${icon("bellNone")}${unread ? '<i class="newdot"></i>' : ""}</a></div>
+      <div class="greet"><h2>학교생활, 필요한 소식을 확인하세요</h2>
+        ${window.FIREBASE_CONFIG && !hidden.has("chat") ? `<a class="btn" href="#chat">${icon("spark")} AI 챗봇에게 물어보기</a>` : ""}
+        ${upd ? `<div class="sub">${upd} 업데이트</div>` : ""}</div>
+      ${backupCard()}
+      <section class="card"><h2 class="chead">오늘 · ${now.getMonth() + 1}월 ${now.getDate()}일 (${DAYS[di]})</h2>
+        ${termClasses().length ? `<a class="trow" href="#timetable">${icon("week")}<div class="grow">${cls}</div></a>` : ""}
+        ${gap ? `<a class="trow" href="#rooms">${icon("room")}<div class="grow">공강 ${durationLabel(gap)} — 빈 강의실 찾기</div></a>` : ""}
+        <a class="trow" href="#shuttle">${icon("bus")}<div class="grow">${bus}</div></a>
+        ${fav.length ? `<a class="trow" href="#menu">${icon("heart")}<div class="grow">오늘 학식에 좋아하는 메뉴: ${esc(fav.slice(0, 3).join(", "))}${fav.length > 3 ? ` 외 ${fav.length - 3}개` : ""}</div></a>` : ""}
+        ${exam ? `<a class="trow urgent" href="#schedule">${icon("note")}<div class="grow">${exam}</div></a>` : ""}
+        ${soon.map((t) => `<a class="trow urgent" href="#tasks">${icon("note")}<div class="grow">${taskBadge(t)} [${esc(t.kind)}] ${esc(t.course)}${t.title ? " · " + esc(t.title) : ""}</div></a>`).join("")}
       </section>
       ${week ? show("week", `<section class="card"><h2>${esc(week.title)}</h2>${week.lines.map((l) => `<div class="sub" style="margin:3px 0">${esc(l)}</div>`).join("")}</section>`) : ""}
-      ${reg ? show("reg", `<section class="card"><h2>📋 ${esc(courseRegShort(reg))}</h2>${eventRow(reg)}
+      ${reg ? show("reg", `<section class="card">${cardHead("note", "var(--primary)", esc(courseRegShort(reg)))}${eventRow(reg)}
         <div class="btns"><button class="btn ghost" id="regics">내 차례 알람을 캘린더에 넣기</button></div>
         <p class="note">학년별 시작 시각은 학사공지·강의편람에서 확인해 주세요.</p></section>`) : ""}
-      ${hidden.has("menu") ? "" : `<section class="card"><h2>오늘 학식 <a class="more" href="#menu">주간 보기 ›</a></h2>
+      ${hidden.has("menu") ? "" : `<section class="card">${cardHead("food", "var(--orange)", "오늘의 학식", "#menu", "주간 보기")}
         ${meals.length ? meals.map((c) => `<div class="row"><div class="grow"><b>${esc(c.name)}</b>
           ${c.meals.map((m) => `<div class="sub">${esc(m.name)}: ${esc(m.dishes.slice(0, 4).join(", "))}${m.dishes.length > 4 ? " …" : ""}</div>`).join("")}</div></div>`).join("")
-          : '<div class="empty">오늘 올라온 식단이 없어요</div>'}
+          : '<div class="sub" style="padding:8px 0">오늘은 올라온 식단이 없어요.</div>'}
       </section>`}
-      ${show("schedule", `<section class="card"><h2>다가오는 학사일정 <a class="more" href="#schedule">전체 ›</a></h2>
+      ${show("schedule", `<section class="card">${cardHead("cal", "var(--accent)", "다가오는 학사일정", "#schedule", "월별 보기")}
         ${events.map(eventRow).join("") || '<div class="empty">다가오는 일정이 없어요</div>'}
       </section>`)}
-      ${show("notices", `<section class="card list"><h2>최근 공지 <a class="more" href="#notices">전체 ›</a></h2>
-        ${notices.map((n) => noticeRow(n)).join("") || '<div class="empty">공지가 없어요</div>'}
-        <p class="note">자료 기준 ${esc((data.notices?.updated || "").replace("T", " ").slice(0, 16))} · 30분마다 갱신</p>
+      ${show("school", `<section class="card">${cardHead("bank", "var(--primary)", "학교 공지사항", "#notices", "더보기", true)}
+        ${school.map((n) => homeNotice(n, "var(--primary)")).join("") || '<div class="sub" style="padding:8px 0">불러오는 중...</div>'}
       </section>`)}
+      ${show("dept", dept ? `<section class="card">${cardHead("school", "var(--accent)", "학과 공지사항", "#notices", "더보기", true)}
+        ${dept.map((n) => homeNotice(n, "var(--accent)")).join("") || '<div class="sub" style="padding:8px 0">불러오는 중이거나 새 글이 없어요.</div>'}
+      </section>` : `<section class="card"><h2 class="chead">관심 학과 공지</h2>
+        <p class="sub">설정에서 관심 학과·단과대를 선택하면 여기 표시돼요.</p><a class="btn ghost small" href="#boards">관심 게시판 고르기</a></section>`)}
       ${installCard()}`;
   },
   after() {
+    $("#hrefresh").onclick = refresh;
     $("#regics") && ($("#regics").onclick = () => courseRegAlarm(courseRegEvent()));
     $("#bnow") && ($("#bnow").onclick = () => { exportBackup(); render(); });
     $("#blater") && ($("#blater").onclick = () => { store.set("backupSnooze", Date.now() + 7 * DAY_MS); render(); });
@@ -355,12 +432,15 @@ routes.notices = {
   html() {
     const ids = myBoards(), boards = data.notices?.boards || {};
     const sel = store.get("noticeFilter", "all");
-    return `
-      <input type="search" id="q" placeholder="공지 검색 (내 게시판 전체)" value="${esc(store.get("noticeQuery", ""))}">
+    const unread = noticesOf(ids).filter((n) => !readSet().has(bmKey(n))).length;
+    return `<div class="hhead" style="margin-bottom:12px"><div class="grow" style="font-size:22px">공지사항<div class="sub" style="font-weight:400">새 소식을 한눈에 확인하세요</div></div>
+        <button id="nrefresh" aria-label="새로고침">${icon("refresh")}</button></div>
+      <input type="search" id="q" placeholder="공지 검색 (여러 단어 가능)" value="${esc(store.get("noticeQuery", ""))}">
       <div class="chips">
         <button class="chip ${sel === "all" ? "on" : ""}" data-f="all">전체</button>
-        <button class="chip ${sel === "bm" ? "on" : ""}" data-f="bm">★ 담은 공지</button>
-        ${keywords().length ? `<button class="chip ${sel === "kw" ? "on" : ""}" data-f="kw">🔑 키워드</button>` : ""}
+        <button class="chip ${sel === "unread" ? "on" : ""}" data-f="unread">읽지 않음 ${unread}</button>
+        <button class="chip ${sel === "bm" ? "on" : ""}" data-f="bm">★ 북마크</button>
+        ${keywords().length ? `<button class="chip ${sel === "kw" ? "on" : ""}" data-f="kw">안읽은 키워드</button>` : ""}
         ${ids.map((id) => `<button class="chip ${sel === id ? "on" : ""}" data-f="${esc(id)}">${esc(boards[id]?.name || id)}</button>`).join("")}
         <a class="chip" href="#boards">＋ 게시판</a>
         <a class="chip" href="#keywords">키워드 설정</a>
@@ -370,18 +450,21 @@ routes.notices = {
   after() {
     const draw = () => {
       const sel = store.get("noticeFilter", "all");
-      const q = $("#q").value.trim().replace(/\s+/g, "").toLowerCase();
-      const ids = sel === "all" || sel === "kw" ? myBoards() : sel === "bm" ? [] : [sel];
+      const qs = $("#q").value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      const ids = sel === "all" || sel === "kw" || sel === "unread" ? myBoards() : sel === "bm" ? [] : [sel];
       const errs = ids.map((id) => data.notices?.boards?.[id]).filter((b) => b?.error && !(b.items || []).length);
       let list = sel === "bm" ? Object.values(bookmarks()) : noticesOf(ids);
-      if (sel === "kw") list = list.filter((n) => hasKeyword(n.title));
-      if (q) list = list.filter((n) => n.title.replace(/\s+/g, "").toLowerCase().includes(q));
-      const multi = sel === "all" || sel === "bm" || sel === "kw";
+      if (sel === "kw") list = list.filter((n) => hasKeyword(n.title) && !readSet().has(bmKey(n)));
+      if (sel === "unread") list = list.filter((n) => !readSet().has(bmKey(n)));
+      // 여러 단어면 모두 든 제목만(앱 "여러 단어 가능")
+      if (qs.length) list = list.filter((n) => { const t = n.title.replace(/\s+/g, "").toLowerCase(); return qs.every((q) => t.includes(q)); });
+      const multi = sel === "all" || sel === "bm" || sel === "kw" || sel === "unread";
       list.sort((a, b) => (!multi && (b.pinned - a.pinned)) || byNewest(a, b));
       $("#nlist").innerHTML = (errs.length ? `<p class="note">⚠ ${errs.map((b) => esc(b.name)).join(", ")}: 지금은 목록을 받지 못했어요</p>` : "")
         + (list.slice(0, 150).map((n) => noticeRow(n, multi)).join("")
           || `<div class="empty">${sel === "bm" ? "공지 옆 ☆를 누르면 여기 모여요" : "공지가 없어요"}</div>`);
     };
+    $("#nrefresh").onclick = refresh;
     $("#q").addEventListener("input", () => { store.set("noticeQuery", $("#q").value); draw(); });
     view.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => {
       store.set("noticeFilter", b.dataset.f);
@@ -393,7 +476,7 @@ routes.notices = {
 };
 
 routes.boards = {
-  title: "관심 게시판", sub: true, tab: "notices",
+  title: "관심 게시판", sub: true, tab: "setup",
   html() {
     const boards = data.notices?.boards || {}, mine = new Set(myBoards());
     const groups = {};
@@ -423,7 +506,7 @@ routes.boards = {
 };
 
 routes.keywords = {
-  title: "키워드", sub: true, tab: "notices",
+  title: "키워드", sub: true, tab: "setup",
   html() {
     return `<section class="card"><h2>관심 키워드</h2>
       <p class="sub">제목에 이 말이 들어간 공지를 노랗게 표시하고, 공지 탭의 🔑 키워드 칩에 모아요. (예: 장학, 근로, 수강신청)</p>
@@ -462,7 +545,7 @@ function favToday() {
   return (data.menu?.cafeterias || []).flatMap((c) => (c.days?.[tk] || []).flatMap((m) => m.dishes.filter(favHit).map((d) => `${c.name} · ${d}`)));
 }
 routes.menu = {
-  title: "학식", src: "https://www.pknu.ac.kr/main/399",
+  title: "학식", sub: true, tab: "home", src: "https://www.pknu.ac.kr/main/399",
   html(arg) {
     const m = data.menu;
     if (!m?.cafeterias?.length) return '<div class="empty">이번 주 식단이 아직 없어요</div>';
@@ -588,7 +671,7 @@ function clashes(list) {
 }
 
 routes.timetable = {
-  title: "시간표",
+  title: "시간표", sub: true, tab: "campus",
   html() {
     const list = termClasses(viewTerm), online = list.filter((c) => c.online), cl = clashes(list);
     const tasks = termTasks(viewTerm).filter((t) => !t.done);
@@ -714,48 +797,102 @@ function importAndroidBackup(text) {
   return `가져왔어요: ${done.join(", ")}`;
 }
 
-// ----- 더보기 -----
-routes.more = {
-  title: "더보기",
+// ----- 자료실 (앱 CampusInfoTab과 같은 순서) -----
+routes.campus = {
+  title: "자료실",
   html() {
-    const item = (href, icon, name, sub) => `<a class="row" href="${href}" style="color:inherit"><span>${icon}</span><div class="grow"><div>${name}</div><div class="sub">${sub}</div></div><span class="sub">›</span></a>`;
-    return `<section class="card"><h2>학교생활</h2>
-      ${window.FIREBASE_CONFIG ? item("#chat", "🤖", "AI 챗봇", "학교생활·앱 사용법 물어보기") : ""}
-      ${item("#faq", "❓", "자주 묻는 질문", "휴학·수강신청·장학금 등")}
-      ${item("#schedule", "📅", "학사일정", "목록·달력, 캘린더 앱에 넣기")}
-      ${item("#shuttle", "🚌", "셔틀버스", "대연 ↔ 용당 시간표")}
-      ${item("#rooms", "🚪", "빈 강의실", "지금 비어 있는 강의실 찾기")}
-      ${item("#library", "📚", "도서관", "열람실 남은 좌석·자료 검색")}
-      ${item("#map", "🗺️", "캠퍼스 지도", "건물 찾기·길찾기")}
-      </section>
-      <section class="card"><h2>수업·학점</h2>
-      ${item("#search", "🔍", "과목 검색", "이번 학기 개설 과목 찾아 시간표에 담기")}
-      ${item("#wizard", "🪄", "시간표 마법사", "안 겹치는 시간표 조합 전부 찾기")}
-      ${item("#tasks", "📌", "시험·과제", "과목별 시험·과제 날짜 적어두기")}
-      ${item("#credits", "🎓", "학점·졸업 요건", "이수 학점, 평점, 목표 평점, 졸업까지 남은 학점")}
-      ${item("#curriculum", "📖", "교육과정", "학년도별 안내서 바로 펴기 · 입학연도별 졸업소요학점")}
-      ${item("#docs", "📄", "자료실 문서", "교육과정·대학생활 가이드·강의편람 PDF, 문서 안 단어 찾기")}
-      ${item("#contacts", "☎️", "학과 연락처", "학과 사무실 전화번호")}
-      ${item("#links", "🔗", "학교 사이트 바로가기", "이루미·강의계획서·자료실 등")}
-      </section>
-      <section class="card"><h2>설정</h2>
-      ${item("#boards", "📌", "관심 게시판", "공지를 모아 볼 게시판 고르기")}
-      ${item("#keywords", "🔑", "관심 키워드", "제목에 이 말이 들어간 공지 강조")}
-      ${window.FIREBASE_CONFIG?.vapidKey ? item("#push", "🔔", "새 공지 알림", "고른 게시판에 새 글이 올라오면 알림") : ""}
-      ${item("#settings", "⚙️", "화면·백업", "테마, 글자 크기, 홈 카드, 백업, 데이터 지우기")}
-      ${item("#news", "📰", "변경 내역", "앱에 새로 생긴 기능")}
-      ${item("#review", "✍️", "리뷰 남기기", "불편한 점·바라는 기능 보내기")}
-      </section>
-      <section class="card"><h2>앱 정보</h2>
+    return `<h1 class="ph">자료실</h1><p class="phs">학교 자료를 한곳에서</p>
+      <div class="stitle">${icon("week")}수업</div>
+      <div class="mcard">
+        ${menuRow("#timetable", "week", "시간표", "내 수업을 넣고 한눈에 보기 · 마법사 · 시험과제 · 학점")}
+        ${menuRow("#search", "book", "강의계획서", "과목·교수로 찾고 담아두기")}
+        ${menuRow("#search/cyber", "pc", "인터넷 강의", "KCU·OCU 과목 찾고 담아두기 · 계절학기 포함")}
+      </div>
+      <div class="stitle">${icon("map")}학교생활</div>
+      <div class="mcard">
+        ${menuRow("#map", "map", "캠퍼스맵", "건물 찾기 · 층별 안내 · 길찾기")}
+        ${menuRow("#shuttle", "bus", "셔틀버스", "대연-용당 다음 차 · 전체 시간표")}
+        ${menuRow("#rooms", "room", "빈 강의실", "공강 시간에 수업 없는 강의실 찾기")}
+        ${menuRow("#library", "seat", "열람실 좌석", "중앙도서관·청운관 실시간 빈자리")}
+        ${menuRow("#library", "search", "도서관 검색", "소장 도서·전자책·학위논문 찾기")}
+        ${menuRow("#contacts", "call", "학과 연락처", "학과 사무실 전화 바로 연결")}
+        ${menuRow("https://www.pknu.ac.kr/ebook/col_life/kor/index.html", "map", "대학생활 E-하나로", "학사·학교생활 안내 전자책 (40쪽)", { ext: true })}
+      </div>
+      <div class="stitle blue">${icon("book")}문서</div>
+      <div class="mcard" id="cdocs">
+        ${menuRow("#docs", "school", "자료실 문서", "교육과정·대학생활 가이드·강의편람 PDF, 문서 안 단어 찾기", { blue: true })}
+        ${menuRow("#curriculum", "school", "교육과정 · 지난 교육과정", "학년도별 안내서 바로 펴기 · 입학연도별 졸업소요학점", { blue: true })}
+      </div>
+      <p class="note">학교 홈페이지에서 학기마다 자동으로 받아와요.</p>
+      <div class="stitle">${icon("qa")}도움</div>
+      <div class="mcard">
+        ${menuRow("#faq", "qa", window.FIREBASE_CONFIG ? "자주 묻는 질문 · AI 챗봇" : "자주 묻는 질문", "앱 사용법 · 학사 · 학교생활 Q&A")}
+        ${menuRow("#links", "pc", "학교 사이트 바로가기", "이루미·강의계획서 조회·학사공지·도서관")}
+      </div>
+      <p class="note">캠퍼스맵은 앱 안에서 바로 보고, 나머지는 학교 홈페이지를 그대로 열어요.</p>`;
+  },
+  async after() {
+    // 앱처럼 문서 목록을 바로 보여준다(누르면 그 문서 단어 찾기)
+    const docs = await docList();
+    if (current !== "campus" || !docs.length) return;
+    $("#cdocs").innerHTML = docs.map((d) => menuRow(`#docs/${enc(d.file)}`, "school", esc(d.title), esc([d.desc, d.pages ? `${d.pages}쪽` : ""].filter(Boolean).join(" · ")), { blue: true })).join("")
+      + menuRow("#curriculum", "school", "지난 교육과정", "학년도별 안내서 · 2010~2026 입학연도별 졸업소요학점", { blue: true })
+      + menuRow("#docs", "search", "모든 문서에서 찾기", "졸업 학점, 휴학, 수강신청 같은 말로 찾기", { blue: true });
+  },
+};
+routes.more = { title: "자료실", html() { location.replace("#campus"); return ""; } }; // 예전 주소(#more) 즐겨찾기
+
+// ----- 설정 (앱 SettingsTab과 같은 묶음) -----
+routes.setup = {
+  title: "설정",
+  html() {
+    const p = store.get("profile", null), n = myBoards().length;
+    const push = window.FIREBASE_CONFIG?.vapidKey;
+    return `<h1 class="ph">설정</h1><p class="phs">공지 수신과 화면을 내 방식대로</p>
+      <a class="profile" href="#credits"><img src="icons/icon-192.png" alt=""><div class="grow">
+        <b>${p ? `${esc(p.year)}학번 ${esc(p.major)}` : "내 프로필 설정하기"}</b>
+        <div class="sub">${p ? "학점·졸업 요건에서 고치기" : "입학연도·전공·학적을 적으면 졸업 학점과 학년이 저절로 계산돼요"}</div>
+        <div class="sub">관심 게시판 ${n}개${push ? ` · 알림 ${store.get("pushOn", false) ? "켜짐" : "꺼짐"}` : ""}</div></div></a>
+      <div class="mcard">${menuRow("#boards", "school", "관심 게시판", `${n}개 선택됨 · 학과·단과대 고르기`)}</div><div class="gap"></div>
+      <div class="mcard">
+        ${push ? menuRow("#push", "bell", "알림", "고른 게시판에 새 글이 올라오면 알림") : ""}
+        ${menuRow("#keywords", "label", "키워드 알림", "받고 싶은 말, 거를 말")}
+      </div><div class="gap"></div>
+      <div class="mcard">
+        ${menuRow("#settings", "palette", "화면", "테마, 글자 크기, 홈 화면 카드")}
+        ${menuRow("#settings/backup", "save", "설정 백업", "내보내기, 가져오기")}
+        ${menuRow("#", "done", "읽음 기록", "읽음 표시 초기화", { attrs: 'id="clearread"' })}
+      </div><div class="gap"></div>
+      <div class="mcard">
+        ${menuRow("#review", "review", "리뷰 남기기", "불편한 점·원하는 기능 보내기")}
+        ${menuRow("#news", "history", "변경 내역", "앱에 새로 생긴 기능")}
+        ${menuRow("#about", "info", "앱 정보", "비공식 앱 안내, 개인정보, 안드로이드 앱")}
+      </div>
+      <p class="note">부경대학교와 무관한 개인 제작 앱이에요 · 웹앱</p>`;
+  },
+  after() {
+    $("#clearread").onclick = (e) => {
+      e.preventDefault();
+      if (!confirm("읽음 표시를 모두 지울까요?")) return;
+      store.set("read", []); readCache = null; toast("읽음 기록을 지웠어요");
+    };
+  },
+};
+
+routes.about = {
+  title: "앱 정보", sub: true, tab: "setup",
+  html() {
+    return `<section class="card"><h2>부경대 공지알리미 (웹앱)</h2>
         <p class="sub">학생이 만든 비공식 앱이에요. 정확한 내용은 꼭 학교 공지 원문으로 확인해 주세요.</p>
         <p class="sub">로그인이 없고 개발자 서버도 없어요. 시간표·학점·담은 공지 같은 개인 기록은 이 브라우저에만 저장돼서 개발자도 볼 수 없어요.${window.FIREBASE_CONFIG ? " AI 챗봇 질문은 답을 만들기 위해 Google(Gemini)로, 새 공지 알림을 켜면 알림 번호와 고른 게시판만 Firebase로 가요." : ""}</p>
+        <p class="sub">자료 출처: 부경대학교 홈페이지·이루미·도서관. 30분마다 모아 와요.</p>
         <p class="sub">안드로이드는 <a href="${ANDROID_APK}">앱(APK)</a>으로 위젯·수업 알림까지 쓸 수 있어요.</p>
-      </section>`;
+      </section>${installCard()}`;
   },
 };
 
 routes.shuttle = {
-  title: "셔틀버스", sub: true, tab: "more",
+  title: "셔틀버스", sub: true, tab: "campus",
   // 시간표를 옮겨 적은 학교 공지(shuttle.json source). 없으면 학사공지 검색 결과
   src: () => (data.shuttle?.source || "").startsWith("https://www.pknu.ac.kr/") ? data.shuttle.source
     : "https://www.pknu.ac.kr/main/163?searchCondition=title&searchKeyword=%EC%85%94%ED%8B%80%EB%B2%84%EC%8A%A4",
@@ -774,7 +911,7 @@ routes.shuttle = {
 };
 
 routes.faq = {
-  title: "자주 묻는 질문", sub: true, tab: "more",
+  title: "자주 묻는 질문", sub: true, tab: "campus",
   html() {
     const items = data.faq?.items || [], cats = ["전체", ...new Set(items.map((i) => i.category))];
     return `<input type="search" id="fq" placeholder="궁금한 것 검색 (예: 휴학, 장학금)">
@@ -802,7 +939,7 @@ routes.faq = {
 // ----- AI 챗봇 (Firebase AI Logic, 안드로이드 앱과 같은 프로젝트·하루 횟수 규칙) -----
 const chatLog = [];
 routes.chat = {
-  title: "AI 챗봇", sub: true, tab: "more",
+  title: "AI 챗봇", sub: true, tab: "campus",
   html() {
     if (!window.FIREBASE_CONFIG) return '<section class="card"><div class="empty">AI 챗봇은 준비 중이에요.<br>자주 묻는 질문에서 먼저 찾아봐 주세요.</div><a class="btn ghost" href="#faq">자주 묻는 질문</a></section>';
     return `<p class="sub" id="left"></p>
@@ -913,7 +1050,7 @@ ${notices}`;
 
 // ----- 새 공지 알림 (웹 푸시) -----
 routes.push = {
-  title: "새 공지 알림", sub: true, tab: "more",
+  title: "새 공지 알림", sub: true, tab: "setup",
   html() {
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
     const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
@@ -958,6 +1095,8 @@ async function setPush(on) {
   }
 }
 
+async function refresh() { await loadAll(true); toast("새로 불러왔어요"); render(); }
+
 // ---------- 시작 ----------
 // 다른 화면 파일(study.js·campus.js)이 routes를 다 채운 뒤에 시작한다
 addEventListener("DOMContentLoaded", () => {
@@ -968,10 +1107,11 @@ addEventListener("DOMContentLoaded", () => {
     const bm = e.target.closest("[data-bm]");
     if (bm) { e.preventDefault(); return toggleBookmark(bm.dataset.bm, bm); }
     const rd = e.target.closest("[data-read]");
-    if (rd) { markRead(rd.dataset.read); rd.parentElement.classList.add("read"); }
+    if (rd) { markRead(rd.dataset.read); (rd.closest(".hn") || rd.parentElement).classList.add("read"); }
   });
-  $("#back").onclick = () => (history.length > 1 ? history.back() : (location.hash = "#more"));
-  $("#refresh").onclick = async () => { await loadAll(true); toast("새로 불러왔어요"); render(); };
+  $("#back").onclick = () => (history.length > 1 ? history.back() : (location.hash = "#home"));
+  $("#refresh").onclick = refresh;
+  document.querySelectorAll(".tabs a").forEach((a) => a.insertAdjacentHTML("afterbegin", icon(a.dataset.icon)));
   addEventListener("hashchange", render);
   render();
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
