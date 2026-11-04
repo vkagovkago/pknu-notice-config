@@ -1,7 +1,7 @@
 {
-  "versionCode": 232,
-  "versionName": "1.18.0",
+  "versionCode": 233,
+  "versionName": "1.19.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "AI 챗봇이 강의를 추천해요(내 시간표와 안 겹치는 과목에서). 시험·과제가 적어 둔 날부터 마감일까지 위젯·오늘 카드에 계속 보여요.",
+  "notes": "시험·과제를 위젯·오늘 카드에 언제부터 보일지 고를 수 있어요(설정 > 시험·과제 표시, 시간표에서 바로 가기). AI 챗봇 강의 추천(1.18.0)도 같이 들어 있어요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
