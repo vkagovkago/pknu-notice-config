@@ -1,7 +1,7 @@
 {
-  "versionCode": 231,
-  "versionName": "1.17.0",
+  "versionCode": 232,
+  "versionName": "1.18.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "공지 본문의 주소·전화번호를 누르면 바로 열리고, 자료실에서 자주 쓰는 기능을 위로 올렸어요. 11월 2일부터는 1.1.1 이상에서만 AI 기능이 동작해요.",
+  "notes": "AI 챗봇이 강의를 추천해요(내 시간표와 안 겹치는 과목에서). 시험·과제가 적어 둔 날부터 마감일까지 위젯·오늘 카드에 계속 보여요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }

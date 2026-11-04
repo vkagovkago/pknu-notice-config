@@ -279,7 +279,7 @@ routes.home = {
     const gap = hol ? null : gapMinutes(today, minute);
     const fav = favToday();
     const week = weekSummary();
-    const soon = upcomingTasks(7).slice(0, 3);
+    const soon = upcomingTasks(Infinity).slice(0, 3); // 적어 둔 날부터 마감일까지 계속(앱 1.18.0과 같게)
     const reg = courseRegEvent();
     const hidden = new Set(store.get("homeHidden", []));
     const show = (id, html) => (hidden.has(id) ? "" : html);
