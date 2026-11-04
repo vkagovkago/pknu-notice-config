@@ -1,7 +1,7 @@
 {
-  "versionCode": 234,
-  "versionName": "1.20.0",
+  "versionCode": 235,
+  "versionName": "1.21.0",
   "url": "https://github.com/vkagovkago/pknu-notice-config/releases/latest/download/pknu-notice.apk",
-  "notes": "공지사항 탭과 홈을 정리해 더 많이 보이고, 공지 제목·날짜가 깔끔해졌어요. 시험·과제는 오늘·내일·1주 뒤를 바로 고를 수 있어요.",
+  "notes": "빨간 점은 진짜 새 글에만, 오래된 고정 공지는 아래로. 과목 검색창과 '내 전공' 버튼, 시간표 메뉴를 정리했어요.",
   "downloadUrl": "https://vkagovkago.github.io/pknu-notice-config/download/"
 }
